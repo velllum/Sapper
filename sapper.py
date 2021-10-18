@@ -2,22 +2,24 @@ import random
 
 from enum import Enum
 
-#  простой уровень - 10 бомб, (10% от 100%)
-#  простой средний уровень - 20 бомб, (20% от 100%)
-#  простой сложный уровень - 30 бомб, (30% от 100%)
 
-
-class Const(int, Enum):
-    """- константы"""
+class Complex(int, Enum):
+    """- сложность"""
 
     EASY = 15
     MEDIUM = 30
     HARD = 45
 
-    NUM_CELLS = 15
-    VERTIC_CELLS = NUM_CELLS
-    HORIZON_CELLS = NUM_CELLS
-    FIELD_CELLS = VERTIC_CELLS * HORIZON_CELLS
+
+class Cells(int, Enum):
+    """- ячейки поля"""
+
+    EMPTY = 0
+    MINE = 9
+    NUM = 15
+    VERTICAL = NUM
+    HORIZON = NUM
+    FIELD = VERTICAL * HORIZON
 
 
 class Client:
@@ -25,10 +27,39 @@ class Client:
 
     def __init__(self, level, app):
         self.level = level  # уровень сложности
-        self.app = app
+        self.app = app  # объект Flask
+
+    def set_difficulty_level(self, string: str):
+        """- установить уровень сложности"""
+
+        if string == "easy":
+            self.level = Complex.EASY.value
+
+        elif string == "medium":
+            self.level = Complex.MEDIUM.value
+
+        elif string == "hard":
+            self.level = Complex.HARD.value
 
     def generate_data(self):
         """- сгенерировать матрицу с данными"""
+
+        # собрать в общий список значение 0 - пустое, 9 - мина
+        lst = [
+            *[Cells.EMPTY.value] * (Cells.FIELD - self.level),
+            *[Cells.MINE.value] * self.level
+        ]
+
+        # перемешать список рандомно
+        random.shuffle(lst)
+
+        # получить вложенные списки по размеру равномерной матрицы
+        lst_field = [
+            lst[cell: cell + Cells.NUM]
+            for cell in range(0, Cells.FIELD, Cells.NUM)
+        ]
+
+        return lst_field
 
 
 class Field:
@@ -69,30 +100,19 @@ class Manager:
 
 if __name__ == '__main__':
 
-    print("=" * 50)
+    print(Cells.MINE.value)
 
     lst = [
-        *[0] * (Const.FIELD_CELLS - Const.EASY),
-        *[1] * Const.EASY
+        *[Cells.EMPTY.value] * (Cells.FIELD - Complex.EASY),
+        *[Cells.MINE.value] * Complex.EASY
     ]
 
     random.shuffle(lst)
 
-    print(lst)
-
-    lst_cells = list(range(Const.FIELD_CELLS))
-
-    print("=" * 100)
-
     lst_field = [
-        lst[cell: cell + Const.NUM_CELLS]
-        for cell in range(0, Const.FIELD_CELLS, Const.NUM_CELLS)
+        lst[cell: cell + Cells.NUM]
+        for cell in range(0, Cells.FIELD, Cells.NUM)
     ]
 
     for i in lst_field:
         print(i, len(i))
-
-
-
-
-
