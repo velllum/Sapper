@@ -1,52 +1,60 @@
+import operator
 import random
 
 from enum import Enum
-from typing import Type
+from typing import Type, Any
 
 
 class Complex(int, Enum):
     """- сложность"""
 
-    EASY = 15
+    EASY = 17
     MEDIUM = 30
     HARD = 45
 
 
-class Cells(int, Enum):
-    """- ячейки поля"""
+class Values(int, Enum):
+    """- Значение ячеек поля"""
 
     EMPTY = 0
     MINE = 9
-    NUM = 15
+    SIZE = 15
+    RATIO = 1
 
-    VERTICAL = NUM
-    HORIZON = NUM
+    VERTICAL = SIZE
+    HORIZON = SIZE
     FIELD = VERTICAL * HORIZON
+    FIRST_INDEX = SIZE - SIZE
+    SECOND_INDEX = SIZE - RATIO
+
+    @staticmethod
+    def GRID():
+        return [-1, 0, 1]
 
 
-class Client:
-    """- игрок, клиент, инициализация данных, оперирование данными"""
+class Matrix:
+    """- реализация заполнения матрицы"""
 
     def __init__(self):
         self.level: int = 0  # уровень сложности
         self.data: list[int] = []
         self.matrix: list[list[int]] = []
 
-    def set_difficulty(self, complex: Type[Complex], st: str):
+    def set_difficulty(self, cxs: Type[Complex], st: str):
         """- установить значение уровня сложности"""
 
-        for comp in complex:
-            if st == comp.name:
-                self.level = comp.value
+        for cx in cxs:
+            if st == cx.name:
+                self.level = cx.value
                 break
 
-    def create_data(self, cell_empty: int, cell_field: int, cell_mine: int):
+    def create_data(self, empty: int, field: int, mine: int):
         """- создать список с метками мин и пустых ячеек, перемешать рандомно"""
 
         # собрать в список значение 0 - пустое, 9 - мина
         lst = [
-            *[cell_empty] * (cell_field - self.level),
-            *[cell_mine] * self.level
+            *[empty] * (field - self.level),
+            *[mine] * self.level
         ]
 
         # перемешать список рандомно
@@ -54,49 +62,101 @@ class Client:
 
         self.data = lst
 
-    def create_matrix(self, cell_field: int, cell_num: int):
+    def create_matrix(self, field: int, size: int):
         """- создать матрицу 15X15"""
 
         # получить вложенные списки по размеру равномерной матрицы 15X15
-        lst = [
-            self.data[cl: cl + cell_num]
-            for cl in range(0, cell_field, cell_num)
+        matrix = [
+            self.data[cl: cl + size]
+            for cl in range(0, field, size)
         ]
 
-        self.matrix = lst
+        self.matrix = matrix
 
-    def select_cells(self):
-        """- поднять значение ячейки, если рядом есть мины"""
+    def fill_matrix(self, grid: list, horizon: range, vertical: range, first: int, second: int, mine: int, ratio: int):
+        """- заполнить матрицу по диагонали сверху и снизу"""
 
+        # создать индексы строк и столбцов для обхода матрицы
+        for rows in horizon:
+            for columns in vertical:
 
-    def init_client(self, str_level: str):
+                # найти мину, для добавления значений соседним ячейкам
+                if self.matrix[rows][columns] == mine:
+
+                    # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
+                    for row_dx in grid:
+                        for col_dx in grid:
+
+                            # получить переменные для проверки границ матрицы
+                            rw = operator.add(rows, row_dx)
+                            cl = operator.add(columns, col_dx)
+
+                            # проверяем границы матрицы, если значения не существует то пропускаем
+                            if cl < first or cl > second or rw < first or rw > second:
+                                continue
+
+                            if columns < first or columns > second or rows < first or rows > second:
+                                continue
+
+                            # проверяем значение в соседних ячейках на мины, при положительном результате пропускаем
+                            if self.matrix[rows + row_dx][columns + col_dx] == mine:
+                                continue
+
+                            # если проверки проходят, то меняем значение в нашей матрице
+                            self.matrix[rows + row_dx][columns + col_dx] += ratio
+
+    def init_matrix(self, str_level: str):
         """- инициализация данных клиента, сбор данных"""
-
         # установить уровень сложности
         self.set_difficulty(
-            complex=Complex,
+            cxs=Complex,
             st=str_level,
         )
 
-        # создать перемешанный список пустых и значений с установки мин
+        # создать перемешанный список пустых значений и значений мин
         self.create_data(
-            cell_empty=Cells.EMPTY.value,
-            cell_field=Cells.FIELD.value,
-            cell_mine=Cells.MINE.value,
+            empty=Values.EMPTY.value,
+            field=Values.FIELD.value,
+            mine=Values.MINE.value,
         )
 
         # создать матрицу
         self.create_matrix(
-            cell_field=Cells.FIELD.value,
-            cell_num=Cells.NUM.value,
+            field=Values.FIELD.value,
+            size=Values.SIZE.value,
         )
+
+        # заполнить матрицу, данными подсказок расположение мин
+        self.fill_matrix(
+            grid=Values.GRID(),
+            horizon=range(Values.HORIZON.value),
+            vertical=range(Values.VERTICAL.value),
+            first=Values.FIRST_INDEX.value,
+            second=Values.SECOND_INDEX.value,
+            mine=Values.MINE.value,
+            ratio=Values.RATIO.value,
+        )
+
+
+class Cells:
+    """- игрок, клиент, инициализация данных, оперирование данными"""
+
+    def __init__(self, row, column, number, count_near_mine):
+        self.mine: bool = False
+        self.row: int = row
+        self.column: int = column
+        self.number: int = number
+        self.count_near_mine: int = count_near_mine
+
+    def __repr__(self):
+        return f"Cell ind-<{self.row}.{self.column}> | mine-<{self.mine}>"
 
 
 class Field:
     """- игровое поле, заполнение поля, проверка на поле ..., выявление на поле ..., операции с ячейками"""
 
     def __init__(self):
-        self.client = Client()
+        pass
 
     def vertical(self, field):
         """- проверка по вертикали"""
@@ -133,39 +193,13 @@ class Manager:
 
 if __name__ == '__main__':
 
-    lst = [
-        *[Cells.EMPTY.value] * (Cells.FIELD - Complex.EASY),
-        *[Cells.MINE.value] * Complex.EASY
-    ]
+    mx = Matrix()
+    mx.init_matrix("EASY")
 
-    random.shuffle(lst)
+    for mx in mx.matrix:
+        print(mx)
 
-    cls = [
-        lst[cell: cell + Cells.NUM]
-        for cell in range(0, Cells.FIELD, Cells.NUM)
-    ]
-
-    for row in range(Cells.NUM.value):
-
-        # print(cls[row])
-
-        for col in range(Cells.NUM.value):
-
-            if cls[row][col] == Cells.MINE.value:
-
-                if not col == (15 - 1) and cls[row][col + 1] != 9:
-                    cls[row][col + 1] = cls[row][col + 1] + 1
-
-                if not col == 0 and cls[row][col - 1] != 9:
-                    cls[row][col - 1] = cls[row][col - 1] + 1
-
-                if not row == 0 and cls[row - 1][col] != 9:
-                    cls[row - 1][col] = cls[row - 1][col] + 1
-
-                if not row == (15 - 1) and cls[row + 1][col] != 9:
-                    cls[row + 1][col] = cls[row + 1][col] + 1
-
-    for i in cls:
-        print(i)
+    cl = Cells(1, 2)
+    print(cl)
 
 
