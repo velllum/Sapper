@@ -17,13 +17,11 @@ class Values(int, Enum):
     """- Значение ячеек поля"""
 
     EMPTY = 0
-    MINE = 9
     SIZE = 15
     RATIO = 1
 
     VERTICAL = SIZE
     HORIZON = SIZE
-    FIELD = VERTICAL * HORIZON
     FIRST_INDEX = SIZE - SIZE
     SECOND_INDEX = SIZE - RATIO
 
@@ -45,25 +43,23 @@ class Cells:
         self.count_mine: int = Values.EMPTY.value  # количество мин находящиеся рядом
 
     def __repr__(self):
-        # return f"<{self.row}.{self.column}.{self.id}> <{self.mine}> <{self.count_mine}>"
-        return f"<{self.mine} {self.count_mine}>"
+        return f"<{self.row}.{self.column}.{self.id}> <{self.mine}> <{self.count_mine}>"
+        # return f"<{self.mine} {self.count_mine}>"
 
     def set_mine(self):
         """- установить мину"""
-
         self.mine = True
 
-    def set_count_mine(self):
+    def set_count_mine(self, ):
         """- увеличить кол. мин находящихся по соседству"""
+        if not self.mine:
+            self.count_mine += Values.RATIO.value
 
-        self.count_mine += Values.RATIO.value
-
-    @staticmethod
-    def get_id():
+    @classmethod
+    def get_id(cls):
         """- получить идентификационный номер ячейки"""
-
-        Cells.count += 1
-        return Cells.count
+        cls.count += 1
+        return cls.count
 
 
 class Field:
@@ -75,7 +71,6 @@ class Field:
 
     def set_difficulty(self, cxs: Type[Complex], st: str):
         """- установить значение уровня сложности"""
-
         for cx in cxs:
             if st == cx.name:
                 self.level = cx.value
@@ -83,7 +78,6 @@ class Field:
 
     def create(self, horizon: range, vertical: range):
         """- создать матрицу 15X15"""
-
         lst = [
             [
                 # добавляем объект ячейки в матрицу
@@ -97,7 +91,6 @@ class Field:
 
     def place_mines(self, size: int):
         """- расставить мины"""
-
         # получить список с id, уникальными идентификаторами объекта
         lst = [cl.id for cel in self.cells for cl in cel]
 
@@ -112,73 +105,36 @@ class Field:
                 if cl.id in lst[: size]:
                     cl.set_mine()
 
-    # def fill_count_mine_nearby(self, grid: list, horizon: range, vertical: range, first: int, second: int, ratio: int):
-    #     """- заполнить матрицу количеством мин по соседству"""
-    #
-    #     # создать индексы строк и столбцов для обхода матрицы
-    #     for rows in horizon:
-    #         for columns in vertical:
-    #
-    #             # найти мину, для добавления значений соседним ячейкам
-    #             if self.cells[rows][columns].mine:
-    #
-    #                 # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
-    #                 for row_dx in grid:
-    #                     for col_dx in grid:
-    #
-    #                         # получить переменные для проверки границ матрицы
-    #                         rw = operator.add(rows, row_dx)
-    #                         cl = operator.add(columns, col_dx)
-    #
-    #                         # проверяем границы матрицы, если значения не существует то пропускаем
-    #                         if cl < first or cl > second or rw < first or rw > second:
-    #                             continue
-    #
-    #                         if columns < first or columns > second or rows < first or rows > second:
-    #                             continue
-    #
-    #                         # проверяем значение в соседних ячейках на мины, при положительном результате пропускаем
-    #                         if self.cells[rows + row_dx][columns + col_dx].mine:
-    #                             continue
-    #
-    #                         # если проверки проходят, то меняем значение в нашей матрице
-    #                         self.cells[rows + row_dx][columns + col_dx] += ratio
-
     def fill_count_mine_nearby(self, grid: list, first: int, second: int):
-        """- заполнить матрицу количеством мин по соседству"""
-
+        """- заполнить матрицу объектов количеством мин по соседству"""
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
             for cs in cells:
 
                 # найти мину, для добавления значений соседним ячейкам
-                if cs.mine:
+                if not cs.mine:
+                    continue
 
-                    # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
-                    for row_dx in grid:
-                        for col_dx in grid:
+                # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
+                for row_dx in grid:
+                    for col_dx in grid:
 
-                            # получить переменные для проверки границ матрицы
-                            rw = operator.add(cs.row, row_dx)
-                            cl = operator.add(cs.column, col_dx)
+                        # получить переменные для проверки границ матрицы
+                        rw = operator.add(cs.row, row_dx)
+                        cl = operator.add(cs.column, col_dx)
 
-                            # проверяем границы матрицы, если значения не существует то пропускаем
-                            if cl < first or cl > second or rw < first or rw > second:
-                                continue
+                        # проверяем границы матрицы, если значения не существует то пропускаем
+                        if cl < first or cl > second or rw < first or rw > second:
+                            continue
 
-                            if cs.column < first or cs.column > second or cs.row < first or cs.row > second:
-                                continue
+                        if cs.column < first or cs.column > second or cs.row < first or cs.row > second:
+                            continue
 
-                            # проверяем значение в соседних ячейках на мины, при положительном результате пропускаем
-                            if not cs.mine:
-                                continue
+                        # если проверки проходят, то меняем значение в нашей матрице
+                        self.cells[rw][cl].set_count_mine()
 
-                            # если проверки проходят, то меняем значение в нашей матрице
-                            self.cells[cs.row + row_dx][cs.column + col_dx].set_count_mine()
-
-    def init_field(self, str_level: str):
+    def init_field(self, str_level: str):  # временно
         """- инициализация данных клиента, сбор данных"""
-
         # установить уровень сложности
         self.set_difficulty(cxs=Complex, st=str_level)
 
@@ -226,12 +182,5 @@ if __name__ == '__main__':
 
     print("=" * 50)
 
-
-
-    # print(mx.place_mines())
-
-    # for cell in mx.cells:
-    #     for cl in cell:
-    #         print(cl.count)
 
 
