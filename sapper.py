@@ -30,44 +30,46 @@ class Values(int, Enum):
         return [-1, 0, 1]
 
 
-class Cells:
+class Cell:
     """- ячейки"""
 
     count: int = Values.EMPTY.value
 
     def __init__(self, row, column):
-        self.mine: bool = False  # мина или нет
+        self.is_mine: bool = False  # мина или нет
+        self.is_hidden: bool = False  # скрыто или нет
         self.row: int = row  # номер строки
         self.column: int = column  # номер колонки
-        self.id: int = Cells.get_id()  # порядковый номер
+        self.id: int = Cell.get_id()  # порядковый номер
         self.count_mine: int = Values.EMPTY.value  # количество мин находящиеся рядом
-
-    def __repr__(self):
-        return f"<{self.row}.{self.column}.{self.id}> <{self.mine}> <{self.count_mine}>"
-        # return f"<{self.mine} {self.count_mine}>"
 
     def set_mine(self):
         """- установить мину"""
-        self.mine = True
+        self.is_mine = True
 
     def set_count_mine(self, ):
         """- увеличить кол. мин находящихся по соседству"""
-        if not self.mine:
+        if not self.is_mine:
             self.count_mine += Values.RATIO.value
 
     @classmethod
     def get_id(cls):
         """- получить идентификационный номер ячейки"""
-        cls.count += 1
+        cls.count += Values.RATIO.value
         return cls.count
+
+    def __repr__(self):
+        # return f"<{self.row}.{self.column}.{self.id}> <{self.is_mine}> <{self.count_mine}>"
+        return f"<{self.is_mine} {self.count_mine}>"
 
 
 class Field:
     """- поле"""
 
     def __init__(self):
-        self.level: int = 0  # уровень сложности
-        self.cells: list[list[Cells]] = []
+        self.cell: Type[Cell] = Cell
+        self.cells: list[list[Cell]] = []
+        self.level: int = Values.EMPTY.value  # уровень сложности
 
     def set_difficulty(self, cxs: Type[Complex], st: str):
         """- установить значение уровня сложности"""
@@ -81,7 +83,7 @@ class Field:
         lst = [
             [
                 # добавляем объект ячейки в матрицу
-                Cells(row=row, column=col)
+                self.cell(row=row, column=col)
                 for col in vertical
             ]
             for row in horizon
@@ -112,7 +114,7 @@ class Field:
             for cs in cells:
 
                 # найти мину, для добавления значений соседним ячейкам
-                if not cs.mine:
+                if not cs.is_mine:
                     continue
 
                 # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
@@ -133,15 +135,15 @@ class Field:
                         # если проверки проходят, то меняем значение в нашей матрице
                         self.cells[rw][cl].set_count_mine()
 
-    def init_field(self, str_level: str):  # временно
+    def init_field(self, level: str):  # временно
         """- инициализация данных клиента, сбор данных"""
         # установить уровень сложности
-        self.set_difficulty(cxs=Complex, st=str_level)
+        self.set_difficulty(cxs=Complex, st=level)
 
         # создать матрицу
         self.create(
             horizon=range(Values.HORIZON.value),
-            vertical=range(Values.VERTICAL.value)
+            vertical=range(Values.VERTICAL.value),
         )
 
         # расставить мины
@@ -158,8 +160,12 @@ class Field:
 class Game:
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
-    def start(self):
+    def __init__(self, field):
+        self.field: Field = field
+
+    def start(self, level: str):
         """- начало игры"""
+        self.field.init_field(level=level)
 
     def end(self):
         """- конец игры"""
@@ -173,11 +179,13 @@ class Game:
 
 if __name__ == '__main__':
 
-    mx = Field()
-    mx.init_field("EASY")
+    fd = Field()
+    gm = Game(field=fd)
+    gm.start(level="EASY")
 
-    for cell in mx.cells:
-        # for cl in cell:
+    print("=" * 50)
+
+    for cell in gm.field.cells:
         print(cell)
 
     print("=" * 50)
