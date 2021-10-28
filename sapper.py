@@ -46,12 +46,17 @@ class Cells:
 
     def __repr__(self):
         # return f"<{self.row}.{self.column}.{self.id}> <{self.mine}> <{self.count_mine}>"
-        return f"<{self.mine}>"
+        return f"<{self.mine} {self.count_mine}>"
 
     def set_mine(self):
         """- установить мину"""
 
         self.mine = True
+
+    def set_count_mine(self):
+        """- увеличить кол. мин находящихся по соседству"""
+
+        self.count_mine += Values.RATIO.value
 
     @staticmethod
     def get_id():
@@ -107,37 +112,69 @@ class Field:
                 if cl.id in lst[: size]:
                     cl.set_mine()
 
-    def fill_count_mine_nearby(self, grid: list, horizon: range, vertical: range, first: int, second: int, mine: int, ratio: int):
+    # def fill_count_mine_nearby(self, grid: list, horizon: range, vertical: range, first: int, second: int, ratio: int):
+    #     """- заполнить матрицу количеством мин по соседству"""
+    #
+    #     # создать индексы строк и столбцов для обхода матрицы
+    #     for rows in horizon:
+    #         for columns in vertical:
+    #
+    #             # найти мину, для добавления значений соседним ячейкам
+    #             if self.cells[rows][columns].mine:
+    #
+    #                 # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
+    #                 for row_dx in grid:
+    #                     for col_dx in grid:
+    #
+    #                         # получить переменные для проверки границ матрицы
+    #                         rw = operator.add(rows, row_dx)
+    #                         cl = operator.add(columns, col_dx)
+    #
+    #                         # проверяем границы матрицы, если значения не существует то пропускаем
+    #                         if cl < first or cl > second or rw < first or rw > second:
+    #                             continue
+    #
+    #                         if columns < first or columns > second or rows < first or rows > second:
+    #                             continue
+    #
+    #                         # проверяем значение в соседних ячейках на мины, при положительном результате пропускаем
+    #                         if self.cells[rows + row_dx][columns + col_dx].mine:
+    #                             continue
+    #
+    #                         # если проверки проходят, то меняем значение в нашей матрице
+    #                         self.cells[rows + row_dx][columns + col_dx] += ratio
+
+    def fill_count_mine_nearby(self, grid: list, first: int, second: int):
         """- заполнить матрицу количеством мин по соседству"""
 
         # создать индексы строк и столбцов для обхода матрицы
-        for rows in horizon:
-            for columns in vertical:
+        for cells in self.cells:
+            for cs in cells:
 
                 # найти мину, для добавления значений соседним ячейкам
-                if self.cells[rows][columns] == mine:
+                if cs.mine:
 
                     # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
                     for row_dx in grid:
                         for col_dx in grid:
 
                             # получить переменные для проверки границ матрицы
-                            rw = operator.add(rows, row_dx)
-                            cl = operator.add(columns, col_dx)
+                            rw = operator.add(cs.row, row_dx)
+                            cl = operator.add(cs.column, col_dx)
 
                             # проверяем границы матрицы, если значения не существует то пропускаем
                             if cl < first or cl > second or rw < first or rw > second:
                                 continue
 
-                            if columns < first or columns > second or rows < first or rows > second:
+                            if cs.column < first or cs.column > second or cs.row < first or cs.row > second:
                                 continue
 
                             # проверяем значение в соседних ячейках на мины, при положительном результате пропускаем
-                            if self.cells[rows + row_dx][columns + col_dx] == mine:
+                            if not cs.mine:
                                 continue
 
                             # если проверки проходят, то меняем значение в нашей матрице
-                            self.cells[rows + row_dx][columns + col_dx] += ratio
+                            self.cells[cs.row + row_dx][cs.column + col_dx].set_count_mine()
 
     def init_field(self, str_level: str):
         """- инициализация данных клиента, сбор данных"""
@@ -153,6 +190,13 @@ class Field:
 
         # расставить мины
         self.place_mines(size=Values.SIZE.value)
+
+        # делаем подсказки, указываем на количество мин по соседству
+        self.fill_count_mine_nearby(
+            grid=Values.GRID(),
+            first=Values.FIRST_INDEX.value,
+            second=Values.SECOND_INDEX.value,
+        )
 
 
 class Game:
