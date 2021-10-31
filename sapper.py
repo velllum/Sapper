@@ -9,9 +9,9 @@ from typing import Type
 class Complex(int, Enum):
     """- сложность"""
 
-    EASY = 17
-    MEDIUM = 30
-    HARD = 45
+    EASY = 30
+    MEDIUM = 40
+    HARD = 50
 
 
 class Values(int, Enum):
@@ -199,6 +199,7 @@ class Game(object):
     def victory(self):
         """- победа в игре"""
         # TODO: победа в игре происходит когда открыты все ячейки, и не открыты ячейки с минами
+
 
     def end(self):
         """- конец игры"""
