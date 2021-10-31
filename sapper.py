@@ -1,3 +1,4 @@
+import json
 import operator
 import random
 
@@ -26,73 +27,88 @@ class Values(int, Enum):
     SECOND_INDEX = SIZE - RATIO
 
     @staticmethod
-    def GRID():
+    def GRID() -> list:
+        """- список с значениями для обхода ячеек"""
         return [-1, 0, 1]
 
+    @staticmethod
+    def DEFAULT_BOOL() -> bool:
+        """- значение по умолчанию мины"""
+        return False
 
-class Cell:
+
+class Cell(object):
     """- ячейки"""
 
     count: int = Values.EMPTY.value
 
     def __init__(self, row, column):
-        self.is_mine: bool = False  # мина или нет
-        self.is_hidden: bool = False  # скрыто или нет
+        self.is_mine: bool = Values.DEFAULT_BOOL()  # ячейка мина или нет
+        self.is_hidden: bool = Values.DEFAULT_BOOL()  # ячейка скрыто или нет
         self.row: int = row  # номер строки
         self.column: int = column  # номер колонки
         self.id: int = Cell.get_id()  # порядковый номер
-        self.count_mine: int = Values.EMPTY.value  # количество мин находящиеся рядом
+        self.count_mine_near: int = Values.EMPTY.value  # количество мин находящиеся рядом
 
     def set_mine(self):
         """- установить мину"""
         self.is_mine = True
 
-    def set_count_mine(self, ):
+    def set_count_mine(self):
         """- увеличить кол. мин находящихся по соседству"""
         if not self.is_mine:
-            self.count_mine += Values.RATIO.value
+            self.count_mine_near += Values.RATIO.value
+
+    def get_coord(self) -> json:
+        """- поучить координаты для матрицы, номера строки и колонки"""
+        return json.dumps(dict(rw=self.row, cl=self.column))
 
     @classmethod
-    def get_id(cls):
+    def get_id(cls) -> int:
         """- получить идентификационный номер ячейки"""
         cls.count += Values.RATIO.value
         return cls.count
 
     def __repr__(self):
         # return f"<{self.row}.{self.column}.{self.id}> <{self.is_mine}> <{self.count_mine}>"
-        return f"<{self.is_mine} {self.count_mine}>"
+        return f"<{self.is_mine} {self.count_mine_near} {self.is_hidden}>"
 
 
-class Field:
+class Field(object):
     """- поле"""
 
     def __init__(self):
-        self.cell: Type[Cell] = Cell
         self.cells: list[list[Cell]] = []
-        self.level: int = Values.EMPTY.value  # уровень сложности
+        self.count_mine_field: int = Values.EMPTY.value  # уровень сложности, по умолчанью ноль
 
-    def set_difficulty(self, cxs: Type[Complex], st: str):
+    def get_cell(self, rw: int, cl: int) -> Cell:
+        """- получить ячейку по значениям столбца и строки"""
+        return self.cells[rw][cl]
+
+    def set_difficulty(self, st: str):
         """- установить значение уровня сложности"""
-        for cx in cxs:
+        for cx in Complex:
             if st == cx.name:
-                self.level = cx.value
+                self.count_mine_field = cx.value
                 break
 
-    def create(self, horizon: range, vertical: range):
+    def create(self, cl: Type[Cell]):
         """- создать матрицу 15X15"""
+
         lst = [
             [
                 # добавляем объект ячейки в матрицу
-                self.cell(row=row, column=col)
-                for col in vertical
+                cl(row=row, column=col)
+                for col in range(Values.VERTICAL.value)
             ]
-            for row in horizon
+            for row in range(Values.HORIZON.value)
         ]
 
         self.cells = lst
 
-    def place_mines(self, size: int):
+    def place_mines(self):
         """- расставить мины"""
+
         # получить список с id, уникальными идентификаторами объекта
         lst = [cl.id for cel in self.cells for cl in cel]
 
@@ -104,11 +120,16 @@ class Field:
         # полученному от пользователя
         for cel in self.cells:
             for cl in cel:
-                if cl.id in lst[: size]:
+                if cl.id in lst[: self.count_mine_field]:
                     cl.set_mine()
 
-    def fill_count_mine_nearby(self, grid: list, first: int, second: int):
+    def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
+
+        grid: list = Values.GRID()
+        first: int = Values.FIRST_INDEX.value
+        second: int = Values.SECOND_INDEX.value
+
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
             for cs in cells:
@@ -135,60 +156,65 @@ class Field:
                         # если проверки проходят, то меняем значение в нашей матрице
                         self.cells[rw][cl].set_count_mine()
 
-    def init_field(self, level: str):  # временно
-        """- инициализация данных клиента, сбор данных"""
-        # установить уровень сложности
-        self.set_difficulty(cxs=Complex, st=level)
 
-        # создать матрицу
-        self.create(
-            horizon=range(Values.HORIZON.value),
-            vertical=range(Values.VERTICAL.value),
-        )
-
-        # расставить мины
-        self.place_mines(size=Values.SIZE.value)
-
-        # делаем подсказки, указываем на количество мин по соседству
-        self.fill_count_mine_nearby(
-            grid=Values.GRID(),
-            first=Values.FIRST_INDEX.value,
-            second=Values.SECOND_INDEX.value,
-        )
-
-
-class Game:
+class Game(object):
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
-    def __init__(self, field):
-        self.field: Field = field
+    cell: Type[Cell] = Cell
+
+    def __init__(self):
+        self.field: Field = Field()
 
     def start(self, level: str):
         """- начало игры"""
-        self.field.init_field(level=level)
 
-    def end(self):
-        """- конец игры"""
+        # получаем уровень сложности, выбранный пользователем и устанавливаем какое будет количество мин на поле
+        self.field.set_difficulty(st=level)
+
+        # создать матрицу
+        self.field.create(cl=Game.cell)
+
+        # расставить мины
+        self.field.place_mines()
+
+        # делаем подсказки, указываем на количество мин по соседству
+        self.field.fill_count_mine_nearby()
+
+    def defeats(self, **kwargs):
+        """- поражения в игре"""
+
+        # TODO логика: поражение в игре происходит когда клиент открыл ячейку с миной
+        #  Получает объект от интерфейса игры, и проверяет не является ли объект миной,
+        #  если да то игра считается проигранной
+
+        # получить ячейку по значению строки и колонки
+        cell = self.field.get_cell(**kwargs)
+
+        # проверка на поражение в игре, если пользователь столкнулся с миной
+        if cell.is_mine is not Values.DEFAULT_BOOL():
+            return True
+
+        return False
 
     def victory(self):
         """- победа в игре"""
+        # TODO: победа в игре происходит когда открыты все ячейки, и не открыты ячейки с минами
 
-    def defeats(self):
-        """- поражения в игре"""
+    def end(self):
+        """- конец игры"""
+        # TODO: конец игры происходит когда клиент закрыл игру, покинул сервер
 
-
-if __name__ == '__main__':
-
-    fd = Field()
-    gm = Game(field=fd)
-    gm.start(level="EASY")
-
-    print("=" * 50)
-
-    for cell in gm.field.cells:
-        print(cell)
-
-    print("=" * 50)
-
-
-
+# if __name__ == '__main__':
+#
+#     # Client - реализация действий клиента
+#
+#     gm = Game()
+#
+#     gm.start(level="EASY")
+#
+#     print("=" * 50)
+#
+#     for cell in gm.field.cells:
+#         print(cell)
+#
+#     print("=" * 50)
