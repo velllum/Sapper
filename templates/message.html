@@ -23,17 +23,30 @@
             transform: translate(-50%, -50%)
             }
 
+    /**/ .flash {padding: 10px;}
+
+        .flash.success {
+             border: 1px solid #21DB56;
+             background: #AEFFC5;
+        }
+
+        .flash.error {
+             border: 1px solid #FF4343;
+             background: #FF9C9C;
+        }
+
     </style>
 </head>
 <body>
 
-    <form method="POST" id="level"></form>
+    <form id="new"></form>
 
     <section>
-        <h1>САПЁР (SAPPER)</h1>
-        <button value="{{ context.EASY.name }}" type="submit" form="level" name="{{ context.EASY.name }}">Лёгкий</button>
-        <button value="{{ context.MEDIUM.name }}" type="submit" form="level" name="{{ context.MEDIUM.name }}">Средний</button>
-        <button value="{{ context.HARD.name }}" type="submit" form="level" name="{{ context.HARD.name }}">Сложный</button>
+        {% for cat, msg in get_flashed_messages(True) %}
+        <div class="flash {{cat}}">{{msg}}</div>
+        {% endfor %}
+        <br>
+        >>> <button type="submit" form="new" formaction="{{ url_for('message') }}" formmethod="GET">НОВАЯ ИГРА</button> <<<
     </section>
 
 </body>

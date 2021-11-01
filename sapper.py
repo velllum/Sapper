@@ -196,8 +196,8 @@ class Game(object):
 
         return False
 
-    def reboot(self):
-        """- перегрузьить игру"""
+    def restart(self):
+        """- перегрузить игру"""
 
     def victory(self):
         """- победа в игре"""

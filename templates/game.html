@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Игра</title>
+    <style type="text/css">
+        button {
+            padding: 5px;
+            height: 30px;
+            width: 30px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        body, html {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        /**/ .flash {padding: 10px;}
+
+        .flash.success {
+             border: 1px solid #21DB56;
+             background: #AEFFC5;
+        }
+
+        .flash.error {
+             border: 1px solid #FF4343;
+             background: #FF9C9C;
+        }
+
+    </style>
+</head>
+<body>
+    <form method="POST" id="cl"></form>
+
+    <div class="container">
+
+        {% for cells in context %}
+        <div style="list-style: none;">
+
+            {% for cell in cells %}
+            <div>
+                {% if cell.is_mine %}
+                <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"><b>М</b></button>
+                {% elif cell.count_mine_near <= 0 %}
+                <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"></button>
+                {% else %}
+                <button style="color: blue" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl">{{ cell.count_mine_near }}</button>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+        </div>
+        {% endfor %}
+
+    </div>
+</body>
+</html>
