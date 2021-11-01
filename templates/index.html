@@ -56,7 +56,7 @@
             {% for cell in cells %}
             <div>
                 {% if cell.is_mine %}
-                <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"><b>M</b></button>
+                <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"><b>М</b></button>
                 {% elif cell.count_mine_near <= 0 %}
                 <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"></button>
                 {% else %}

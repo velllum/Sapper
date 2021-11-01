@@ -3,7 +3,7 @@ import operator
 import random
 
 from enum import Enum
-from typing import Type
+from typing import Type, List
 
 
 class Complex(int, Enum):
@@ -32,7 +32,7 @@ class Values(int, Enum):
         return [-1, 0, 1]
 
     @staticmethod
-    def DEFAULT_BOOL() -> bool:
+    def DEFAULT() -> bool:
         """- значение по умолчанию мины"""
         return False
 
@@ -43,8 +43,8 @@ class Cell(object):
     count: int = Values.EMPTY.value
 
     def __init__(self, row, column):
-        self.is_mine: bool = Values.DEFAULT_BOOL()  # ячейка мина или нет
-        self.is_hidden: bool = Values.DEFAULT_BOOL()  # ячейка скрыто или нет
+        self.is_mine: bool = Values.DEFAULT()  # ячейка мина или нет
+        self.is_hidden: bool = Values.DEFAULT()  # ячейка скрыто или нет
         self.row: int = row  # номер строки
         self.column: int = column  # номер колонки
         self.id: int = Cell.get_id()  # порядковый номер
@@ -78,7 +78,7 @@ class Field(object):
     """- поле"""
 
     def __init__(self):
-        self.cells: list[list[Cell]] = []
+        self.cells: List[List[Cell]] = []
         self.count_mine_field: int = Values.EMPTY.value  # уровень сложности, по умолчанью ноль
 
     def get_cell(self, rw: int, cl: int) -> Cell:
@@ -180,30 +180,30 @@ class Game(object):
         # делаем подсказки, указываем на количество мин по соседству
         self.field.fill_count_mine_nearby()
 
-    def defeats(self, **kwargs):
+    def end(self, **kwargs):
         """- поражения в игре"""
 
-        # TODO логика: поражение в игре происходит когда клиент открыл ячейку с миной
-        #  Получает объект от интерфейса игры, и проверяет не является ли объект миной,
+        # TODO логика: конец в игре происходит когда клиент открыл ячейку с миной
+        #  Принимает объект из вебинтерфейса игры, и проверяет не является ли объект миной,
         #  если да то игра считается проигранной
 
         # получить ячейку по значению строки и колонки
         cell = self.field.get_cell(**kwargs)
 
         # проверка на поражение в игре, если пользователь столкнулся с миной
-        if cell.is_mine is not Values.DEFAULT_BOOL():
+        if cell.is_mine is not Values.DEFAULT():
             return True
 
         return False
 
+    def reboot(self):
+        """- перегрузьить игру"""
+
     def victory(self):
         """- победа в игре"""
+
         # TODO: победа в игре происходит когда открыты все ячейки, и не открыты ячейки с минами
 
-
-    def end(self):
-        """- конец игры"""
-        # TODO: конец игры происходит когда клиент закрыл игру, покинул сервер
 
 # if __name__ == '__main__':
 #
