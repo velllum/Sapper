@@ -1,5 +1,6 @@
 import json
 
+import flask
 from flask import (
     Flask,
     render_template,
@@ -17,7 +18,7 @@ gm = Game()
 
 
 @app.route("/message")
-def message():
+def action():
     """- страница с сообщением результат игры"""
     return redirect(url_for("index"))
 
@@ -29,17 +30,17 @@ def game():
 
         dct = json.loads(*list(request.form.values()))
 
+        flask.g.dct = dct
+
         print("game", dct)
+        print("flask.g.dct", flask.g.dct)
 
         # проверка если пользователь кликнул на ячейку с миной
-        if gm.end(**dct):
+        if gm.end():
 
             # передать сообщение о проигрыше
             flash(message="ВЫ ПРОИГРАЛИ", category='error')
-
-            print("end", dct)
-
-            return render_template('message.html')
+            return render_template('action.html')
 
         # редирект если если был выполнен post запрос
         return redirect(url_for("game"))
@@ -54,9 +55,9 @@ def game():
 @app.route('/', methods=["GET", "POST"])
 def index():
     """- главная страница, выбора сложности игры"""
-    if request.method == 'POST':
-        value, = request.form.to_dict().values()
-        gm.start(level=value)
+    if request.args:
+        gm.init_game(*list(request.args.values()))
+        gm.start()
 
         return redirect(url_for("game"))
 
@@ -81,7 +82,7 @@ def index():
 #             flash(message="ВЫ ПРОИГРАЛИ", category='error')
 #             print("end", dct)
 #             # TODO добавить кнопки для возобновления игры
-#             return render_template('message.html')
+#             return render_template('action.html')
 
 # app.before_first_request(register)
 # app.before_request(end)

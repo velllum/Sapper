@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Выберите сложность</title>
+    <title>Сообщение</title>
     <style type="text/css">
 
         button {
@@ -46,7 +46,7 @@
         <div class="flash {{cat}}">{{msg}}</div>
         {% endfor %}
         <br>
-        >>> <button type="submit" form="new" formaction="{{ url_for('message') }}" formmethod="GET">НОВАЯ ИГРА</button> <<<
+        >>> <button type="submit" form="new" formaction="{{ url_for('action') }}" formmethod="GET">НОВАЯ ИГРА</button> <<<
     </section>
 
 </body>

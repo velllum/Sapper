@@ -5,6 +5,8 @@ import random
 from enum import Enum
 from typing import Type, List
 
+import flask
+
 
 class Complex(int, Enum):
     """- сложность"""
@@ -165,14 +167,17 @@ class Game(object):
     def __init__(self):
         self.field: Field = Field()
 
-    def start(self, level: str):
-        """- начало игры"""
-
+    def init_game(self, level: str):
+        """- инициализируем данные в игре"""
+        print("init_game", level)
         # получаем уровень сложности, выбранный пользователем и устанавливаем какое будет количество мин на поле
         self.field.set_difficulty(st=level)
 
         # создать матрицу
         self.field.create(cl=Game.cell)
+
+    def start(self):
+        """- запуск игры"""
 
         # расставить мины
         self.field.place_mines()
@@ -183,12 +188,14 @@ class Game(object):
     def end(self, **kwargs):
         """- поражения в игре"""
 
+        print("def end(self, **kwargs):", flask.g.dct)
+
         # TODO логика: конец в игре происходит когда клиент открыл ячейку с миной
         #  Принимает объект из вебинтерфейса игры, и проверяет не является ли объект миной,
         #  если да то игра считается проигранной
 
         # получить ячейку по значению строки и колонки
-        cell = self.field.get_cell(**kwargs)
+        cell = self.field.get_cell(**flask.g.dct)
 
         # проверка на поражение в игре, если пользователь столкнулся с миной
         if cell.is_mine is not Values.DEFAULT():
