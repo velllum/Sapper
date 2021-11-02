@@ -3,9 +3,7 @@ import operator
 import random
 
 from enum import Enum
-from typing import Type, List
-
-import flask
+from typing import Type, List, Union
 
 
 class Complex(int, Enum):
@@ -168,61 +166,48 @@ class Game(object):
         self.field: Field = Field()
 
     def init_game(self, level: str):
-        """- инициализируем данные в игре"""
-        print("init_game", level)
-        # получаем уровень сложности, выбранный пользователем и устанавливаем какое будет количество мин на поле
+        """- инициализация игры"""
+        # получаем уровень сложности, выбранный пользователем
+        # и устанавливаем какое будет количество мин на поле
         self.field.set_difficulty(st=level)
-
-        # создать матрицу
+        # создать матрицу, и заполнить объектами ячейки
         self.field.create(cl=Game.cell)
-
-    def start(self):
-        """- запуск игры"""
-
         # расставить мины
         self.field.place_mines()
-
         # делаем подсказки, указываем на количество мин по соседству
         self.field.fill_count_mine_nearby()
 
-    def end(self, **kwargs):
+    def handlers(self, *args) -> Union[dict, None]:
+        """- обработчик полученной ячейки, проверка на поражения и на победу"""
+
+        if self.defeat(*args):
+            return dict(message="ВЫ ПРОИГРАЛИ", category='error')
+
+        if self.victory(*args):
+            return dict(message="ВЫ ВЫГРАЛИ, УРА!!!", category='success')
+
+        return None
+
+    def defeat(self, *args) -> bool:
         """- поражения в игре"""
-
-        print("def end(self, **kwargs):", flask.g.dct)
-
         # TODO логика: конец в игре происходит когда клиент открыл ячейку с миной
-        #  Принимает объект из вебинтерфейса игры, и проверяет не является ли объект миной,
+        #  Принимает объект из веб-интерфейса игры, и проверяет не является ли объект миной,
         #  если да то игра считается проигранной
 
         # получить ячейку по значению строки и колонки
-        cell = self.field.get_cell(**flask.g.dct)
-
+        # TODO переписать функцию get_cell передать ей числовые значения
+        cell = self.field.get_cell(*args)
         # проверка на поражение в игре, если пользователь столкнулся с миной
         if cell.is_mine is not Values.DEFAULT():
             return True
 
         return False
 
-    def restart(self):
+    def restart(self, *args):
         """- перегрузить игру"""
 
-    def victory(self):
+    def victory(self, *args):
         """- победа в игре"""
 
         # TODO: победа в игре происходит когда открыты все ячейки, и не открыты ячейки с минами
 
-
-# if __name__ == '__main__':
-#
-#     # Client - реализация действий клиента
-#
-#     gm = Game()
-#
-#     gm.start(level="EASY")
-#
-#     print("=" * 50)
-#
-#     for cell in gm.field.cells:
-#         print(cell)
-#
-#     print("=" * 50)

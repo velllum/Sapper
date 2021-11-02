@@ -17,7 +17,7 @@ app.config['SECRET_KEY'] = 'secret!'
 gm = Game()
 
 
-@app.route("/message")
+@app.route("/action")
 def action():
     """- страница с сообщением результат игры"""
     return redirect(url_for("index"))
@@ -26,66 +26,53 @@ def action():
 @app.route("/game", methods=["GET", "POST"])
 def game():
     """- Играем"""
-    if request.method == 'POST':
-
-        dct = json.loads(*list(request.form.values()))
-
-        flask.g.dct = dct
-
-        print("game", dct)
-        print("flask.g.dct", flask.g.dct)
-
-        # проверка если пользователь кликнул на ячейку с миной
-        if gm.end():
-
-            # передать сообщение о проигрыше
-            flash(message="ВЫ ПРОИГРАЛИ", category='error')
-            return render_template('action.html')
-
-        # редирект если если был выполнен post запрос
-        return redirect(url_for("game"))
-
-    # проверка если матрица пуста, то вернуть на главную страницу
+    # проверка если матрица пуста, или еще была не создана,
+    # то вернуть на главную страницу, для повторной инициализации
     if not gm.field.cells:
         return redirect(url_for("index"))
 
-    return render_template('game.html', context=gm.field.cells)
+    # если get запрос вернулся пустым,
+    # то тогда загружаем страницу с данными нашей матрицы
+    if not request.method == "POST":
+        return render_template('game.html', context=gm.field.cells)
+
+    # coord = json.loads(*list(request.form.values()))
+    coord = request.form.items()
+
+    # print(coord)
+    # print(dict(request.form.items()))
+    # print(dict(request.form.items()).items())
+    # x, y = request.form.items()
+    # print(x, y)
+
+    response = gm.handlers(*coord)
+
+    # проверка если пользователь кликнул на ячейку с миной
+    if response:
+
+        # передать сообщение результата проверки, после обработки
+        flash(**response)
+        return render_template('game.html')
+
+    # редирект если если был выполнен post запрос
+    return redirect(url_for("game"))
 
 
 @app.route('/', methods=["GET", "POST"])
 def index():
     """- главная страница, выбора сложности игры"""
+    if request.method == "POST":
+        return redirect(url_for("index"))
+
     if request.args:
-        gm.init_game(*list(request.args.values()))
-        gm.start()
+
+        lst = list(request.args.values())
+        gm.init_game(*lst)
 
         return redirect(url_for("game"))
 
     return render_template('index.html', context=Complex)
 
-
-# @app.before_first_request
-# def register():
-#     print("one_start")
-#     gm.start(level="EASY")
-
-
-# @app.before_request
-# def end():
-#     """- проверка результата"""
-#     lst = list(request.form.values())
-#     if lst:
-#         dct = json.loads(*list(request.form.values()))
-#         # проверка если пользователь кликнул на ячейку с миной
-#         if gm.end(**dct):
-#             # передать сообщение о проигрыше
-#             flash(message="ВЫ ПРОИГРАЛИ", category='error')
-#             print("end", dct)
-#             # TODO добавить кнопки для возобновления игры
-#             return render_template('action.html')
-
-# app.before_first_request(register)
-# app.before_request(end)
 
 if __name__ == '__main__':
     app.run(debug=True)

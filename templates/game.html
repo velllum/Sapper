@@ -4,13 +4,27 @@
     <meta charset="UTF-8">
     <title>Игра</title>
     <style type="text/css">
-        button {
+        .btn {
             padding: 5px;
             height: 30px;
             width: 30px;
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+        }
+
+        .btn_section {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        section {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-right: -50%;
+            transform: translate(-50%, -50%)
         }
 
         body, html {
@@ -26,7 +40,7 @@
             height: 100%;
         }
 
-        /**/ .flash {padding: 10px;}
+        .flash {padding: 10px;}
 
         .flash.success {
              border: 1px solid #21DB56;
@@ -43,19 +57,30 @@
 <body>
     <form method="POST" id="cl"></form>
 
+    {% for cat, msg in get_flashed_messages(True) %}
+    {% if msg %}
+    <section>
+        <div class="flash {{cat}}">{{msg}}</div>
+        <br>
+        >>> <button class="btn_section" type="submit" form="cl" formaction="{{ url_for('index') }}">НОВАЯ ИГРА</button> <<<
+    </section>
+    {% endif %}
+    {% endfor %}
+
+
     <div class="container">
 
         {% for cells in context %}
-        <div style="list-style: none;">
+        <div style="">
 
             {% for cell in cells %}
             <div>
                 {% if cell.is_mine %}
-                <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"><b>М</b></button>
+                <button class="btn" style="color: red" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl"><b>М</b></button>
                 {% elif cell.count_mine_near <= 0 %}
-                <button style="color: red" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl"></button>
+                <button class="btn" style="color: red" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl"></button>
                 {% else %}
-                <button style="color: blue" value="{{ cell.get_coord() }}" type="submit" name="{{ cell.id }}" form="cl">{{ cell.count_mine_near }}</button>
+                <button class="btn" style="color: blue" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl">{{ cell.count_mine_near }}</button>
                 {% endif %}
             </div>
             {% endfor %}
