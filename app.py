@@ -1,6 +1,5 @@
-import json
+import copy
 
-import flask
 from flask import (
     Flask,
     render_template,
@@ -13,14 +12,28 @@ from flask import (
 from sapper import Game, Complex
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+app.config['SECRET_KEY'] = 'secret_key'
+app.config['DEBUG'] = True
+
 gm = Game()
 
 
-@app.route("/action")
-def action():
-    """- страница с сообщением результат игры"""
-    return redirect(url_for("index"))
+@app.route('/', methods=["GET", "POST"])
+def index():
+    """- главная страница, выбора сложности игры"""
+    # если был выполнен POST запрос,
+    # то переводим нашего клиента на главную страницу
+    if request.method == "POST":
+        return redirect(url_for("index"))
+
+    if request.args:
+        # получить данные с уровнем сложности
+        lst: list[str] = list(request.args.values())
+        # инициализируем игру
+        gm.init_game(*lst)
+        return redirect(url_for("game"))
+
+    return render_template('index.html', context=Complex)
 
 
 @app.route("/game", methods=["GET", "POST"])
@@ -31,50 +44,55 @@ def game():
     if not gm.field.cells:
         return redirect(url_for("index"))
 
-    # если get запрос вернулся пустым,
-    # то тогда загружаем страницу с данными нашей матрицы
-    if not request.method == "POST":
-        return render_template('game.html', context=gm.field.cells)
-
-    # coord = json.loads(*list(request.form.values()))
-    coord = request.form.items()
-
-    # print(coord)
-    # print(dict(request.form.items()))
-    # print(dict(request.form.items()).items())
-    # x, y = request.form.items()
-    # print(x, y)
-
-    response = gm.handlers(*coord)
-
-    # проверка если пользователь кликнул на ячейку с миной
-    if response:
-
-        # передать сообщение результата проверки, после обработки
-        flash(**response)
-        return render_template('game.html')
-
-    # редирект если если был выполнен post запрос
-    return redirect(url_for("game"))
-
-
-@app.route('/', methods=["GET", "POST"])
-def index():
-    """- главная страница, выбора сложности игры"""
-    if request.method == "POST":
-        return redirect(url_for("index"))
-
+    # обновить данные ячеек, при клики на кнопку "обновить"
     if request.args:
-
-        lst = list(request.args.values())
-        gm.init_game(*lst)
-
+        gm.restart()
         return redirect(url_for("game"))
 
-    return render_template('index.html', context=Complex)
+    # если get запрос вернулся пустым,
+    # то тогда загружаем страницу с данными нашей матрицы
+    if request.method == "GET":
+        return render_template('game.html', context=gm)
+
+    # получить значение из формы
+    lst: list[tuple[str, str]] = list(request.form.items())
+    # конвертировать значения из строк в целочисленные значения
+    coord: tuple[int, int] = convert_to_integer(*lst)
+    # передать координаты в обработчик для проверки
+    response: dict = gm.handler(*coord)
+
+    # проверка возврата данных на False,
+    # если данные пришли не пустые то передаем их в сообщение для вывода
+    # данные могут быть как о победе так и проигрыше
+    if response is not None:
+        # передать сообщение результата проверки, после обработки
+        flash(**response)
+
+    """--- Вывод в консоль (шпаргалка) ---"""
+    copy_cells = copy.deepcopy(gm.field.cells)
+    lst_cells = []
+
+    for x in range(15):
+        cells = []
+        lst_cells.append(cells)
+        for y in range(15):
+            cells.append(copy_cells[y][x])
+
+    for cl in copy.deepcopy(gm.field.cells):
+        print(cl)
+    """-----------------------------------"""
+
+    # обновляем данные поля
+    return render_template('game.html', context=gm)
+
+
+def convert_to_integer(tup: tuple) -> tuple[int, int]:
+    """- конвертировать в число"""
+    row, column = tup
+    return int(row), int(column)
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run()
 
 

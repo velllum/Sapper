@@ -14,9 +14,24 @@
         }
 
         .btn_section {
+            background-color: #fc0;
+            margin-right: 10px;
+            margin-top: 10px;
             -webkit-appearance: none;
             -moz-appearance: none;
             appearance: none;
+        }
+
+        .btn_left {
+            background-color: #fc0;
+            padding: 0px;
+            margin-right: 10px;
+            margin-top: 10px;
+        }
+
+        .text {
+             writing-mode: vertical-lr;
+             text-orientation: upright;
         }
 
         section {
@@ -58,36 +73,76 @@
     <form method="POST" id="cl"></form>
 
     {% for cat, msg in get_flashed_messages(True) %}
-    {% if msg %}
-    <section>
-        <div class="flash {{cat}}">{{msg}}</div>
-        <br>
-        >>> <button class="btn_section" type="submit" form="cl" formaction="{{ url_for('index') }}">НОВАЯ ИГРА</button> <<<
-    </section>
-    {% endif %}
+        {% if msg %}
+        <section>
+            <div class="flash {{cat}}">{{msg}}</div>
+            <br>
+            <center><button class="btn_section" type="submit" form="cl" formaction="{{ url_for('index') }}">НОВАЯ ИГРА</button></center>
+        </section>
+        {% endif %}
     {% endfor %}
-
 
     <div class="container">
 
-        {% for cells in context %}
-        <div style="">
-
-            {% for cell in cells %}
+        {%- if not context.is_flag -%}
+        {#<!-- кнопки слева от блока (статус is_flag = False) -->#}
             <div>
-                {% if cell.is_mine %}
-                <button class="btn" style="color: red" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl"><b>М</b></button>
-                {% elif cell.count_mine_near <= 0 %}
-                <button class="btn" style="color: red" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl"></button>
-                {% else %}
-                <button class="btn" style="color: blue" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl">{{ cell.count_mine_near }}</button>
-                {% endif %}
+                <center>
+                    <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">
+                        <span class="text">обновить</span>
+                    </button>
+                </center>
+
+                <center>
+                    <button class="btn_left" type="submit" form="cl" formaction="{{ url_for('index') }}">
+                        <span class="text">выбор сложности</span>
+                    </button>
+                </center>
             </div>
-            {% endfor %}
+        {%- endif -%}
 
+        {%- for cells in context.field.cells %}
+        <div>
+            {%- for cell in cells %}
+            <div>
+                {%- if not context.is_flag -%}
+
+                    {#<!-- отображать данный блок с ячейками, пока флаг False (статус is_flag = False) -->#}
+                    {%- if cell.is_open -%}
+                        {#<!-- отобразить ячейки, если они были открыты (статус is_open = True)  -->#}
+                        <button class="btn" style="color: blue" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl" disabled><b>
+                            {%- if cell.count_mine_near != 0 -%}
+                                <span style="color: blue;">{{ cell.count_mine_near }}</span>
+                            {%- endif -%}
+                        </b></button>
+                    {%- else -%}
+                       {# <!-- отобразить ячейки, если они пока не были открыты, то есть закрытыми (статус is_open = False) -->#}
+                        <button class="btn" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl">
+                            {#<!-- временно -->#}
+                            {%- if cell.is_mine -%}
+                                <em>М</em>
+                            {%- elif cell.count_mine_near != 0 -%}
+                                <em>{{ cell.count_mine_near }}</em>
+                            {%- endif -%}
+                        </button>
+                    {%- endif -%}
+
+                {#<!-- вывести данный блок с ячейками, если флаг True (статус is_flag = True) -->#}
+                {%- else -%}
+                    {#<!-- отображение ячеек после победы или проигрыша -->#}
+                    <button class="btn" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl" disabled><b>
+                        {%- if cell.is_mine -%}
+                            <span style="color: red;">М</span>
+                        {%- elif cell.count_mine_near != 0 -%}
+                            <span style="color: blue;">{{ cell.count_mine_near }}</span>
+                        {%- endif -%}
+                    </b></button>
+                {%- endif -%}
+
+            </div>
+            {% endfor -%}
         </div>
-        {% endfor %}
-
+        {% endfor -%}
     </div>
 </body>
 </html>

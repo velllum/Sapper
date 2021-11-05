@@ -1,4 +1,3 @@
-import json
 import operator
 import random
 
@@ -25,53 +24,75 @@ class Values(int, Enum):
     HORIZON = SIZE
     FIRST_INDEX = SIZE - SIZE
     SECOND_INDEX = SIZE - RATIO
+    FULL_CELLS = VERTICAL * HORIZON
 
     @staticmethod
-    def GRID() -> list:
-        """- список с значениями для обхода ячеек"""
+    def GRID_HVD() -> list:
+        """- список с значениями для обхода ячеек
+        по вертикали, горизонтали и диагонали"""
         return [-1, 0, 1]
-
-    @staticmethod
-    def DEFAULT() -> bool:
-        """- значение по умолчанию мины"""
-        return False
 
 
 class Cell(object):
     """- ячейки"""
 
-    count: int = Values.EMPTY.value
+    count_id: int = Values.EMPTY.value
+    count_open_cells: int = Values.EMPTY.value
 
     def __init__(self, row, column):
-        self.is_mine: bool = Values.DEFAULT()  # ячейка мина или нет
-        self.is_hidden: bool = Values.DEFAULT()  # ячейка скрыто или нет
+        self.is_mine: bool = False  # ячейка мина или нет
+        self.is_open: bool = False  # ячейка скрыто или нет
         self.row: int = row  # номер строки
         self.column: int = column  # номер колонки
-        self.id: int = Cell.get_id()  # порядковый номер
+        self.id: int = Cell.create_id()  # порядковый номер
         self.count_mine_near: int = Values.EMPTY.value  # количество мин находящиеся рядом
-
-    def set_mine(self):
-        """- установить мину"""
-        self.is_mine = True
+        self.open_cells: int = Values.EMPTY.value  # количество открытых ячеек, по умолчанию ноль
 
     def set_count_mine(self):
         """- увеличить кол. мин находящихся по соседству"""
         if not self.is_mine:
             self.count_mine_near += Values.RATIO.value
 
-    def get_coord(self) -> json:
-        """- поучить координаты для матрицы, номера строки и колонки"""
-        return json.dumps(dict(rw=self.row, cl=self.column))
+    def set_mine(self):
+        """- установить мину"""
+        self.is_mine = True
+
+    def set_open(self):
+        """- установить ячейку из скрытой в открытую"""
+        # счетчик подсчета количества открытых ячеек
+        if self.is_open is not True:
+            Cell.set_count_open_cells()
+        self.is_open = True
+
+    def is_count_mine(self):
+        """- проверка если значение больше ноля, то True"""
+        if self.count_mine_near != Values.EMPTY.value:
+            return True
+        return False
 
     @classmethod
-    def get_id(cls) -> int:
-        """- получить идентификационный номер ячейки"""
-        cls.count += Values.RATIO.value
-        return cls.count
+    def get_count_open_cells(cls):
+        return cls.count_open_cells
+
+    @classmethod
+    def set_count_open_cells(cls):
+        """- увеличить количество ячеек, которые были открыты"""
+        cls.count_open_cells += Values.RATIO.value
+
+    @classmethod
+    def create_id(cls) -> int:
+        """- создать идентификационный номер ячейки"""
+        cls.count_id += Values.RATIO.value
+        return cls.count_id
 
     def __repr__(self):
-        # return f"<{self.row}.{self.column}.{self.id}> <{self.is_mine}> <{self.count_mine}>"
-        return f"<{self.is_mine} {self.count_mine_near} {self.is_hidden}>"
+        """- вывод матрицы с данными
+        для отображении шпаргалки в консоли"""
+        if self.is_mine:
+            return "M"
+        if self.is_open:
+            return "*"
+        return f"{self.count_mine_near}"
 
 
 class Field(object):
@@ -80,9 +101,15 @@ class Field(object):
     def __init__(self):
         self.cells: List[List[Cell]] = []
         self.count_mine_field: int = Values.EMPTY.value  # уровень сложности, по умолчанью ноль
+        self.non_mined_cells: int = Values.EMPTY.value  # количество не заминированных ячеек, по умолчанию ноль
 
-    def get_cell(self, rw: int, cl: int) -> Cell:
-        """- получить ячейку по значениям столбца и строки"""
+    def get_cell(self, rw: int, cl: int) -> Union[Cell, None]:
+        """- получить значение ячейки по номеру столбца и строки"""
+        first: int = Values.FIRST_INDEX.value
+        second: int = Values.SECOND_INDEX.value
+        # проверка входных данных, на границы размера матрицы
+        if cl < first or cl > second or rw < first or rw > second:
+            return None
         return self.cells[rw][cl]
 
     def set_difficulty(self, st: str):
@@ -92,9 +119,12 @@ class Field(object):
                 self.count_mine_field = cx.value
                 break
 
-    def create(self, cl: Type[Cell]):
-        """- создать матрицу 15X15"""
+    def get_non_mined_cells(self):
+        """- получить количество не заминированных ячеек"""
+        self.non_mined_cells = Values.FULL_CELLS - self.count_mine_field
 
+    def create_matrix(self, cl: Type[Cell]):
+        """- создать матрицу 15X15"""
         lst = [
             [
                 # добавляем объект ячейки в матрицу
@@ -108,27 +138,68 @@ class Field(object):
 
     def place_mines(self):
         """- расставить мины"""
-
         # получить список с id, уникальными идентификаторами объекта
-        lst = [cl.id for cel in self.cells for cl in cel]
-
+        lst: list[int] = [cl.id for cel in self.cells for cl in cel]
         # перемешать список с id рандомно
         random.shuffle(lst)
-
+        # сделать срез по количеству мин, указанные клиентом
+        lt: list[int] = lst[: self.count_mine_field]
         # перезаписать матрицу, расставить мины,
         # используя перемешанный рандомно список и обрезанный по указателю сложности,
         # полученному от пользователя
         for cel in self.cells:
             for cl in cel:
-                if cl.id in lst[: self.count_mine_field]:
+                if cl.id in lt:
                     cl.set_mine()
+
+    def open_empty_cells_nearby(self, cl: Cell):
+        """- открыть пустые ячейки поблизости"""
+
+        grid: list = Values.GRID_HVD()
+        queue: list[Cell] = [cl]  # очередь
+
+        while queue:
+
+            # берем последнее значение из очереди
+            cell: Cell = queue.pop()
+
+            # если у ячейки статус, is_open = True, то такую ячейку пропускаем
+            if cell.is_open:
+                continue
+
+            # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
+            for row_dx in grid:
+                for col_dx in grid:
+
+                    # получить переменные для проверки границ матрицы
+                    rw: int = operator.add(cell.row, row_dx)
+                    cl: int = operator.add(cell.column, col_dx)
+
+                    # проверяем границы матрицы, если значения не существует то пропускаем
+                    response: Cell = self.get_cell(rw=rw, cl=cl)
+
+                    if not response:
+                        continue
+
+                    # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
+                    if response.is_mine:
+                        continue
+
+                    # если в свойстве ответа количество мин не равен нолю (пустоте),
+                    # и у ячейки статус не открыта, то добавляем ее в очередь
+                    if not response.count_mine_near and not response.is_open:
+                        queue.append(response)
+                    # иначе у ячейки ставим статус открытой is_open = True
+                    else:
+                        response.set_open()
+
+            # добавляем текущей ячейки (от которой ведется обход) статус открыта is_open = True
+            cell.set_open()
 
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
 
-        grid: list = Values.GRID()
-        first: int = Values.FIRST_INDEX.value
-        second: int = Values.SECOND_INDEX.value
+        grid: list = Values.GRID_HVD()
 
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
@@ -143,71 +214,87 @@ class Field(object):
                     for col_dx in grid:
 
                         # получить переменные для проверки границ матрицы
-                        rw = operator.add(cs.row, row_dx)
-                        cl = operator.add(cs.column, col_dx)
+                        rw: int = operator.add(cs.row, row_dx)
+                        cl: int = operator.add(cs.column, col_dx)
 
                         # проверяем границы матрицы, если значения не существует то пропускаем
-                        if cl < first or cl > second or rw < first or rw > second:
-                            continue
+                        response = self.get_cell(rw=rw, cl=cl)
 
-                        if cs.column < first or cs.column > second or cs.row < first or cs.row > second:
+                        if not response:
                             continue
 
                         # если проверки проходят, то меняем значение в нашей матрице
-                        self.cells[rw][cl].set_count_mine()
+                        response.set_count_mine()
+
+    def create_field(self):
+        """- создаем поле"""
+        # создать матрицу, и заполнить объектами ячейки
+        self.create_matrix(cl=Cell)
+        # расставить мины
+        self.place_mines()
+        # делаем подсказки, указываем на количество мин по соседству
+        self.fill_count_mine_nearby()
+        # получить количество не заминированных ячеек
+        self.get_non_mined_cells()
+
+    def init_field(self, level: str):
+        """- инициализируем поле, загружаем поле"""
+        # получаем уровень сложности, выбранный пользователем
+        # и устанавливаем какое будет количество мин на поле
+        self.set_difficulty(st=level)
+        # создаем поле
+        self.create_field()
 
 
 class Game(object):
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
-    cell: Type[Cell] = Cell
-
     def __init__(self):
         self.field: Field = Field()
+        self.is_flag: bool = False
 
     def init_game(self, level: str):
         """- инициализация игры"""
-        # получаем уровень сложности, выбранный пользователем
-        # и устанавливаем какое будет количество мин на поле
-        self.field.set_difficulty(st=level)
-        # создать матрицу, и заполнить объектами ячейки
-        self.field.create(cl=Game.cell)
-        # расставить мины
-        self.field.place_mines()
-        # делаем подсказки, указываем на количество мин по соседству
-        self.field.fill_count_mine_nearby()
+        # инициализируем поле, игры
+        self.field.init_field(level=level)
+        # обнулить счетчик открытых ячеек
+        self.reset_properties()
 
-    def handlers(self, *args) -> Union[dict, None]:
-        """- обработчик полученной ячейки, проверка на поражения и на победу"""
+    def handler(self, *args) -> Union[dict, None]:
+        """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
+        # получить объект выбранной ячейки, из поля
+        cell: Cell = self.field.get_cell(*args)
 
-        if self.defeat(*args):
+        # проверка на пустую ячейку,
+        # или ячейку с количеством мин
+        if cell.is_count_mine() is True:
+            # если не пустая, а имеет значение мин рядом,
+            # то переводим в открытое состояние
+            cell.set_open()
+        else:
+            # если ячейка пустая, то открыть все рядом пустые ячейки
+            self.field.open_empty_cells_nearby(cl=cell)
+
+        # проверка поражения в игре
+        if cell.is_mine is True:
+            # проверка на поражение в игре, если пользователь столкнулся с миной
+            # если поражение передаем словарь с сообщение о проигрыше и имя стиля класса, для подсветки
+            self.is_flag = True
             return dict(message="ВЫ ПРОИГРАЛИ", category='error')
 
-        if self.victory(*args):
+        if Cell.count_open_cells >= self.field.non_mined_cells:
+            # если победа передаем словарь с сообщение о победе и имя стиля класса, для подсветки
+            self.is_flag = True
             return dict(message="ВЫ ВЫГРАЛИ, УРА!!!", category='success')
 
         return None
 
-    def defeat(self, *args) -> bool:
-        """- поражения в игре"""
-        # TODO логика: конец в игре происходит когда клиент открыл ячейку с миной
-        #  Принимает объект из веб-интерфейса игры, и проверяет не является ли объект миной,
-        #  если да то игра считается проигранной
+    def reset_properties(self):
+        """- обнулить счетчик открытых ячеек"""
+        Cell.count_open_cells = Values.EMPTY.value
+        self.is_flag = False
 
-        # получить ячейку по значению строки и колонки
-        # TODO переписать функцию get_cell передать ей числовые значения
-        cell = self.field.get_cell(*args)
-        # проверка на поражение в игре, если пользователь столкнулся с миной
-        if cell.is_mine is not Values.DEFAULT():
-            return True
-
-        return False
-
-    def restart(self, *args):
-        """- перегрузить игру"""
-
-    def victory(self, *args):
-        """- победа в игре"""
-
-        # TODO: победа в игре происходит когда открыты все ячейки, и не открыты ячейки с минами
+    def restart(self):
+        """- перегрузить игру, с выбранным набором сложности, level"""
+        self.field.create_field()
 
