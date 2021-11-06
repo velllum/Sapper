@@ -256,10 +256,14 @@ class Game(object):
         self.field: Field = Field()
         self.is_flag: bool = False
 
-    def init_game(self, level: str):
+    def init_game(self):
         """- инициализация игры"""
+        # получить данные из формы от GET запроса,
+        # с данными уровня сложности
+        lst: list[str] = list(request.args.values())
+
         # инициализируем поле, игры
-        self.field.init_field(level=level)
+        self.field.init_field(*lst)
         # обнулить счетчик открытых ячеек
         self.reset_properties()
 
@@ -267,6 +271,7 @@ class Game(object):
         """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
         # получить значение из формы (POST запрос)
         args: list[tuple[str, str]] = list(request.form.items())
+
         # конвертировать значения из строк в целочисленные значения
         coord: tuple[int, int] = self.convert_to_integer(*args)
         # получить объект выбранной ячейки, из поля

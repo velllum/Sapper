@@ -8,14 +8,12 @@ from flask import (
     url_for,
     flash,
 )
-# from flask_socketio import SocketIO
 
 from sapper import Game, Complex
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
 app.config['DEBUG'] = True
-# socket = SocketIO(app)
 
 gm = Game()
 
@@ -31,10 +29,9 @@ def index():
 
     if request.method == "GET":
         if request.args:
-            # получить данные от GET запроса с уровнем сложности
-            lst: list[str] = list(request.args.values())
-            # инициализируем игру
-            gm.init_game(*lst)
+            # инициализируем игру, при помощи полученных
+            # данных от GET запроса реализованны в init_game
+            gm.init_game()
             return redirect(url_for("game"))
 
         return render_template('index.html', context=Complex)
@@ -93,5 +90,4 @@ def print_console():
 
 if __name__ == '__main__':
     app.run()
-    # socket.run(app)
 
