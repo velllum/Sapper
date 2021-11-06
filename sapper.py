@@ -2,318 +2,312 @@ import operator
 import random
 
 from enum import Enum
-from typing import Type
+from typing import Type, List, Union
 
 
 class Complex(int, Enum):
     """- сложность"""
 
-    EASY = 17
-    MEDIUM = 30
-    HARD = 45
+    EASY = 30
+    MEDIUM = 40
+    HARD = 50
 
 
-class Cells(int, Enum):
-    """- ячейки поля"""
+class Values(int, Enum):
+    """- Значение ячеек поля"""
 
     EMPTY = 0
-    MINE = 9
     SIZE = 15
     RATIO = 1
 
     VERTICAL = SIZE
     HORIZON = SIZE
-    FIELD = VERTICAL * HORIZON
-    FIRST_INDEX = SIZE - RATIO
-    SECOND_INDEX = SIZE - SIZE
+    FIRST_INDEX = SIZE - SIZE
+    SECOND_INDEX = SIZE - RATIO
+    FULL_CELLS = VERTICAL * HORIZON
+
+    @staticmethod
+    def GRID_HVD() -> list:
+        """- список с значениями для обхода ячеек
+        по вертикали, горизонтали и диагонали"""
+        return [-1, 0, 1]
 
 
-class Matrix:
-    """- реализация заполнения матрицы"""
+class Cell(object):
+    """- ячейки"""
 
-    def __init__(self):
-        self.matrix: list[list[int]] = []
+    count_id: int = Values.EMPTY.value
+    count_open_cells: int = Values.EMPTY.value
 
-        self.mine: int = Cells.MINE.value
-        self.ratio: int = Cells.RATIO.value
+    def __init__(self, row, column):
+        self.is_mine: bool = False  # ячейка мина или нет
+        self.is_open: bool = False  # ячейка скрыто или нет
+        self.row: int = row  # номер строки
+        self.column: int = column  # номер колонки
+        self.id: int = Cell.create_id()  # порядковый номер
+        self.count_mine_near: int = Values.EMPTY.value  # количество мин находящиеся рядом
+        self.open_cells: int = Values.EMPTY.value  # количество открытых ячеек, по умолчанию ноль
 
-    def create_matrix(self, dt: list[int], field: int, size: int):
-        """- создать матрицу 15X15"""
+    def set_count_mine(self):
+        """- увеличить кол. мин находящихся по соседству"""
+        if not self.is_mine:
+            self.count_mine_near += Values.RATIO.value
 
-        # получить вложенные списки по размеру равномерной матрицы 15X15
-        matrix = [
-            dt[cl: cl + size]
-            for cl in range(0, field, size)
-        ]
+    def set_mine(self):
+        """- установить мину"""
+        self.is_mine = True
 
-        self.matrix = matrix
+    def set_open(self):
+        """- установить ячейку из скрытой в открытую"""
+        # счетчик подсчета количества открытых ячеек
+        if self.is_open is not True:
+            Cell.set_count_open_cells()
+        self.is_open = True
 
-    def fill_horizontal(self, position: operator, rows: int, columns: int, ind: int):
-        """- заполнить матрицу по горизонтали слева и справа"""
+    def is_count_mine(self):
+        """- проверка если значение больше ноля, то True"""
+        if self.count_mine_near != Values.EMPTY.value:
+            return True
+        return False
 
-        # проверка, если значение первое или последнее (чтоб не оперировать в матрице с не существующими значениями)
-        # и если оно не равно значению мины, тогда выполнить операцию
-        if columns != ind and self.matrix[rows][position] != self.mine:
-            self.matrix[rows][position] += self.ratio
+    @classmethod
+    def get_count_open_cells(cls):
+        return cls.count_open_cells
 
-    def fill_vertically(self, position: operator, rows: int, columns: int, ind: int):
-        """- заполнить матрицу по вертикали сверху и снизу"""
+    @classmethod
+    def set_count_open_cells(cls):
+        """- увеличить количество ячеек, которые были открыты"""
+        cls.count_open_cells += Values.RATIO.value
 
-        # проверка, если значение первое или последнее (чтоб не оперировать в матрице не существующими значениями)
-        # и если оно не равно значению мины, тогда выполнить операцию
-        if rows != ind and self.matrix[position][columns] != self.mine:
-            self.matrix[position][columns] += self.ratio
+    @classmethod
+    def create_id(cls) -> int:
+        """- создать идентификационный номер ячейки"""
+        cls.count_id += Values.RATIO.value
+        return cls.count_id
 
-    def fill_diagonally(self, row_pos: operator, col_pos: operator, rows: int, columns: int, sd_ind: int, ft_ind: int):
-        """- заполнить матрицу по диагонали сверху и снизу"""
+    def __repr__(self):
+        """- вывод матрицы с данными
+        для отображении шпаргалки в консоли"""
+        if self.is_mine:
+            return "M"
+        if self.is_open:
+            return " "
 
-        # проверка, если значение первое или последнее (чтоб не оперировать в матрице не существующими значениями)
-        # и если оно не равно значению мины, тогда выполнить операцию
-        if rows != sd_ind and columns != ft_ind and self.matrix[row_pos][col_pos] != self.mine:
-            self.matrix[row_pos][col_pos] += self.ratio
-
-    def init_matrix(self, cells: Type[Cells], lst: list[int], horizon: range, vertical: range):
-        """- заполнить матрицу, данными подсказок расположение мин"""
-
-        self.create_matrix(
-            dt=lst,
-            field=cells.FIELD.value,
-            size=cells.SIZE.value,
-        )
-
-        for rows in horizon:
-
-            for columns in vertical:
-
-                if self.matrix[rows][columns] == self.mine:
-
-                    kwargs = dict(
-                        rows=rows,
-                        columns=columns,
-                    )
-
-                    """заполнить матрицу по горизонтали"""
-                    # слева
-                    self.fill_horizontal(
-                        position=operator.sub(columns, self.ratio),
-                        ind=cells.SECOND_INDEX.value,
-                        **kwargs,
-                    )
-
-                    # справа
-                    self.fill_horizontal(
-                        position=operator.add(columns, self.ratio),
-                        ind=cells.FIRST_INDEX.value,
-                        **kwargs,
-                    )
-
-                    """по вертикали"""
-                    # снизу
-                    self.fill_vertically(
-                        position=operator.add(rows, self.ratio),
-                        ind=cells.FIRST_INDEX.value,
-                        **kwargs,
-                    )
-
-                    # сверху
-                    self.fill_vertically(
-                        position=operator.sub(rows, self.ratio),
-                        ind=cells.SECOND_INDEX.value,
-                        **kwargs,
-                    )
-
-                    """по диагонали"""
-                    # сверху справа
-                    self.fill_diagonally(
-                        row_pos=operator.sub(rows, self.ratio),
-                        col_pos=operator.add(columns, self.ratio),
-                        ft_ind=cells.FIRST_INDEX.value,
-                        sd_ind=cells.SECOND_INDEX.value,
-                        **kwargs,
-                    )
-
-                    # сверху слева
-                    self.fill_diagonally(
-                        row_pos=operator.sub(rows, self.ratio),
-                        col_pos=operator.sub(columns, self.ratio),
-                        ft_ind=cells.SECOND_INDEX.value,
-                        sd_ind=cells.SECOND_INDEX.value,
-                        **kwargs,
-                    )
-
-                    # снизу справа
-                    self.fill_diagonally(
-                        row_pos=operator.add(rows, self.ratio),
-                        col_pos=operator.add(columns, self.ratio),
-                        ft_ind=cells.FIRST_INDEX.value,
-                        sd_ind=cells.FIRST_INDEX.value,
-                        **kwargs,
-                    )
-
-                    # снизу слева
-                    self.fill_diagonally(
-                        row_pos=operator.add(rows, self.ratio),
-                        col_pos=operator.sub(columns, self.ratio),
-                        ft_ind=cells.SECOND_INDEX.value,
-                        sd_ind=cells.FIRST_INDEX.value,
-                        **kwargs,
-                    )
+        return f"{self.count_mine_near}"
 
 
-class Data:
-    """- игрок, клиент, инициализация данных, оперирование данными"""
+class Field(object):
+    """- поле"""
 
     def __init__(self):
-        self.level: int = 0  # уровень сложности
-        self.data: list[int] = []
-        self.mx = Matrix()
+        self.cells: List[List[Cell]] = []
+        self.count_mine_field: int = Values.EMPTY.value  # уровень сложности, по умолчанью ноль
+        self.non_mined_cells: int = Values.EMPTY.value  # количество не заминированных ячеек, по умолчанию ноль
 
-    def set_difficulty(self, cxs: Type[Complex], st: str):
+    def get_cell(self, rw: int, cl: int) -> Union[Cell, None]:
+        """- получить значение ячейки по номеру столбца и строки"""
+        first: int = Values.FIRST_INDEX.value
+        second: int = Values.SECOND_INDEX.value
+        # проверка входных данных, на границы размера матрицы
+        if cl < first or cl > second or rw < first or rw > second:
+            return None
+        return self.cells[rw][cl]
+
+    def set_difficulty(self, st: str):
         """- установить значение уровня сложности"""
-
-        for cx in cxs:
+        for cx in Complex:
             if st == cx.name:
-                self.level = cx.value
+                self.count_mine_field = cx.value
                 break
 
-    def create_data(self, empty: int, field: int, mine: int):
-        """- создать список с метками мин и пустых ячеек, перемешать рандомно"""
+    def get_non_mined_cells(self):
+        """- получить количество не заминированных ячеек"""
+        self.non_mined_cells = Values.FULL_CELLS - self.count_mine_field
 
-        # собрать в список значение 0 - пустое, 9 - мина
+    def create_matrix(self, cl: Type[Cell]):
+        """- создать матрицу 15X15"""
         lst = [
-            *[empty] * (field - self.level),
-            *[mine] * self.level
+            [
+                # добавляем объект ячейки в матрицу
+                cl(row=row, column=col)
+                for col in range(Values.VERTICAL.value)
+            ]
+            for row in range(Values.HORIZON.value)
         ]
 
-        # перемешать список рандомно
+        self.cells = lst
+
+    def place_mines(self):
+        """- расставить мины"""
+        # получить список с id, уникальными идентификаторами объекта
+        lst: list[int] = [cl.id for cel in self.cells for cl in cel]
+        # перемешать список с id рандомно
         random.shuffle(lst)
+        # сделать срез по количеству мин, указанные клиентом
+        lt: list[int] = lst[: self.count_mine_field]
+        # перезаписать матрицу, расставить мины,
+        # используя перемешанный рандомно список и обрезанный по указателю сложности,
+        # полученному от пользователя
+        for cel in self.cells:
+            for cl in cel:
+                if cl.id in lt:
+                    cl.set_mine()
 
-        self.data = lst
+    def open_empty_cells_nearby(self, cl: Cell):
+        """- открыть пустые ячейки поблизости"""
 
-    def init_data(self, str_level: str):
-        """- инициализация данных клиента, сбор данных"""
+        grid: list = Values.GRID_HVD()
+        queue: list[Cell] = [cl]  # очередь
 
-        # установить уровень сложности
-        self.set_difficulty(
-            cxs=Complex,
-            st=str_level,
-        )
+        while queue:
 
-        # создать перемешанный список пустых значений и значений мин
-        self.create_data(
-            empty=Cells.EMPTY.value,
-            field=Cells.FIELD.value,
-            mine=Cells.MINE.value,
-        )
+            # берем последнее значение из очереди
+            cell: Cell = queue.pop()
 
-        # инициализация и создание матрицы
-        self.mx.init_matrix(
-            cells=Cells,
-            lst=self.data,
-            horizon=range(Cells.HORIZON.value),
-            vertical=range(Cells.VERTICAL.value),
-        )
+            # если у ячейки статус, is_open = True, то такую ячейку пропускаем
+            if cell.is_open:
+                continue
+
+            # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
+            for row_dx in grid:
+                for col_dx in grid:
+
+                    # получить переменные для проверки границ матрицы
+                    rw: int = operator.add(cell.row, row_dx)
+                    cl: int = operator.add(cell.column, col_dx)
+
+                    # проверяем границы матрицы, если значения не существует то пропускаем
+                    response: Cell = self.get_cell(rw=rw, cl=cl)
+
+                    if not response:
+                        continue
+
+                    # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
+                    if response.is_mine:
+                        continue
+
+                    # если в свойстве ответа количество мин не равен нолю (пустоте),
+                    # и у ячейки статус не открыта, то добавляем ее в очередь
+                    if not response.count_mine_near and not response.is_open:
+                        queue.append(response)
+                    # иначе у ячейки ставим статус открытой is_open = True
+                    else:
+                        response.set_open()
+
+            # добавляем текущей ячейки (от которой ведется обход) статус открыта is_open = True
+            cell.set_open()
+
+    def fill_count_mine_nearby(self):
+        """- заполнить матрицу объектов количеством мин по соседству"""
+
+        grid: list = Values.GRID_HVD()
+
+        # создать индексы строк и столбцов для обхода матрицы
+        for cells in self.cells:
+            for cs in cells:
+
+                # найти мину, для добавления значений соседним ячейкам
+                if not cs.is_mine:
+                    continue
+
+                # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
+                for row_dx in grid:
+                    for col_dx in grid:
+
+                        # получить переменные для проверки границ матрицы
+                        rw: int = operator.add(cs.row, row_dx)
+                        cl: int = operator.add(cs.column, col_dx)
+
+                        # проверяем границы матрицы, если значения не существует то пропускаем
+                        response = self.get_cell(rw=rw, cl=cl)
+
+                        if not response:
+                            continue
+
+                        # если проверки проходят, то меняем значение в нашей матрице
+                        response.set_count_mine()
+
+    def create_field(self):
+        """- создаем поле"""
+        # создать матрицу, и заполнить объектами ячейки
+        self.create_matrix(cl=Cell)
+        # расставить мины
+        self.place_mines()
+        # делаем подсказки, указываем на количество мин по соседству
+        self.fill_count_mine_nearby()
+        # получить количество не заминированных ячеек
+        self.get_non_mined_cells()
+
+    def init_field(self, level: str):
+        """- инициализируем поле, загружаем поле"""
+        # получаем уровень сложности, выбранный пользователем
+        # и устанавливаем какое будет количество мин на поле
+        self.set_difficulty(st=level)
+        # создаем поле
+        self.create_field()
 
 
-class Field:
-    """- игровое поле, заполнение поля, проверка на поле ..., выявление на поле ..., операции с ячейками"""
-
-    def __init__(self):
-        self.client = Data()
-
-    def vertical(self, field):
-        """- проверка по вертикали"""
-
-    def horizontal(self, field):
-        """- проверка по горизонтали"""
-
-    def diagonal(self, field):
-        """- проверка по диагонали"""
-
-    def number_mine(self):
-        """- количество мин на поле"""
-
-
-class Game:
+class Game(object):
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
-    def start(self):
-        """- начало игры"""
+    def __init__(self):
+        self.field: Field = Field()
+        self.is_flag: bool = False
 
-    def end(self):
-        """- конец игры"""
+    def init_game(self, level: str):
+        """- инициализация игры"""
+        # инициализируем поле, игры
+        self.field.init_field(level=level)
+        # обнулить счетчик открытых ячеек
+        self.reset_properties()
 
-    def victory(self):
-        """- победа в игре"""
+    def handler(self, *args) -> Union[dict, None]:
+        """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
+        # конвертировать значения из строк в целочисленные значения
+        coord: tuple[int, int] = self.convert_to_integer(*args)
+        # получить объект выбранной ячейки, из поля
+        cell: Cell = self.field.get_cell(*coord)
 
-    def defeats(self):
-        """- поражения в игре"""
+        # проверка на пустую ячейку,
+        # или ячейку с количеством мин
+        if cell.is_count_mine() is True:
+            # если не пустая, а имеет значение мин рядом,
+            # то переводим в открытое состояние
+            cell.set_open()
+        else:
+            # если ячейка пустая, то открыть все рядом пустые ячейки
+            self.field.open_empty_cells_nearby(cl=cell)
 
+        # проверка поражения в игре
+        if cell.is_mine is True:
+            # проверка на поражение в игре, если пользователь столкнулся с миной
+            # если поражение передаем словарь с сообщение о проигрыше и имя стиля класса, для подсветки
+            self.is_flag = True
+            return dict(message="ВЫ ПРОИГРАЛИ", category='error')
 
-class Manager:
-    """- точка входа"""
+        if Cell.count_open_cells >= self.field.non_mined_cells:
+            # если победа передаем словарь с сообщение о победе и имя стиля класса, для подсветки
+            self.is_flag = True
+            return dict(message="ВЫ ВЫГРАЛИ, УРА!!!", category='success')
 
+        return None
 
-if __name__ == '__main__':
+    def reset_properties(self):
+        """- вернуть свойства в первоначальное состояние"""
+        # обнулить счетчик
+        Cell.count_open_cells = Values.EMPTY.value
+        # установить флаг в первоначальное состояние
+        self.is_flag = False
 
-    data = Data()
-    data.init_data("EASY")
+    def restart(self):
+        """- перегрузить игру, с выбранным набором сложности, level"""
+        self.reset_properties()
+        # вернуть свойства в первоначальное состояние
+        self.field.create_field()
 
-    for mx in data.mx.matrix:
-        print(mx)
-
-    # lst = [
-    #     *[Cells.EMPTY.value] * (Cells.FIELD - Complex.EASY),
-    #     *[Cells.MINE.value] * Complex.EASY
-    # ]
-    #
-    # random.shuffle(lst)
-    #
-    # cls = [
-    #     lst[cell: cell + Cells.SIZE]
-    #     for cell in range(0, Cells.FIELD, Cells.SIZE)
-    # ]
-    #
-    # for row in range(Cells.SIZE.value):
-    #
-    #     # print(cls[row])
-    #
-    #     for col in range(Cells.SIZE.value):
-    #
-    #         if cls[row][col] == Cells.MINE.value:
-    #
-    #             # по горизонтали
-    #             if col != (15 - 1) and cls[row][col + 1] != 9:
-    #                 cls[row][col + 1] += 1
-    #
-    #             if col != 0 and cls[row][col - 1] != 9:
-    #                 cls[row][col - 1] += 1
-    #
-    #             # по вертикали
-    #             if row != 0 and cls[row - 1][col] != 9:
-    #                 cls[row - 1][col] += 1
-    #
-    #             if row != (15 - 1) and cls[row + 1][col] != 9:
-    #                 cls[row + 1][col] += 1
-    #
-    #             """по диагонали"""
-    #             # сверху справа
-    #             if row != 0 and col != (15 - 1) and cls[row - 1][col + 1] != 9:
-    #                 cls[row - 1][col + 1] += 1
-    #
-    #             # сверху слева
-    #             if row != 0 and col != 0 and cls[row - 1][col - 1] != 9:
-    #                 cls[row - 1][col - 1] += 1
-    #
-    #             # снизу справа
-    #             if row != (15 - 1) and col != (15 - 1) and cls[row + 1][col + 1] != 9:
-    #                 cls[row + 1][col + 1] += 1
-    #
-    #             # снизу слева
-    #             if row != (15 - 1) and col != 0 and cls[row + 1][col - 1] != 9:
-    #                 cls[row + 1][col - 1] += 1
-    #
-    # for i in cls:
-    #     print(i)
-
+    @staticmethod
+    def convert_to_integer(tup: tuple) -> tuple[int, int]:
+        """- конвертировать полученные данные от кнопки в число"""
+        row, column = tup
+        return int(row), int(column)
 

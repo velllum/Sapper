@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Выберите сложность</title>
+    <style type="text/css">
+
+        button {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        body {
+            background: white
+            }
+
+        section {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            margin-right: -50%;
+            transform: translate(-50%, -50%)
+            }
+
+    </style>
+</head>
+<body>
+
+    <form method="GET" id="level"></form>
+
+    <section>
+        <h1>САПЁР (SAPPER)</h1>
+        <button value="{{ context.EASY.name }}" type="submit" form="level" name="{{ context.EASY.name }}">Лёгкий</button>
+        <button value="{{ context.MEDIUM.name }}" type="submit" form="level" name="{{ context.MEDIUM.name }}">Средний</button>
+        <button value="{{ context.HARD.name }}" type="submit" form="level" name="{{ context.HARD.name }}">Сложный</button>
+    </section>
+
+</body>
+
+</html>
