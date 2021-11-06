@@ -118,12 +118,14 @@
                     {%- else -%}
                        {# <!-- отобразить ячейки, если они пока не были открыты, то есть закрытыми (статус is_open = False) -->#}
                         <button class="btn" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl">
-                            {#<!-- временно -->#}
-                            {%- if cell.is_mine -%}
-                                <em>М</em>
-                            {%- elif cell.count_mine_near != 0 -%}
-                                <em>{{ cell.count_mine_near }}</em>
-                            {%- endif -%}
+                            {#
+                                <!-- Для просмотра подсказок в шаблоне раскомментировать блок-->
+                                {%- if cell.is_mine -%}
+                                    <em>М</em>
+                                {%- elif cell.count_mine_near != 0 -%}
+                                    <em>{{ cell.count_mine_near }}</em>
+                                {%- endif -%}
+                            #}
                         </button>
                     {%- endif -%}
 
@@ -133,7 +135,7 @@
                     <button class="btn" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl" disabled><b>
                         {%- if cell.is_mine -%}
                             <span style="color: red;">М</span>
-                        {%- elif cell.count_mine_near != 0 -%}
+                        {%- elif cell.is_count_mine() -%}
                             <span style="color: blue;">{{ cell.count_mine_near }}</span>
                         {%- endif -%}
                     </b></button>

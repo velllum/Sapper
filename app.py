@@ -22,53 +22,61 @@ gm = Game()
 def index():
     """- главная страница, выбора сложности игры"""
     # если был выполнен POST запрос,
-    # то переводим нашего клиента на главную страницу
+    # то переводим повторно нашего клиента на главную страницу,
+    # чтоб убрать лишнее присутствие данных в ссылке после GET запроса
     if request.method == "POST":
         return redirect(url_for("index"))
 
-    if request.args:
-        # получить данные с уровнем сложности
-        lst: list[str] = list(request.args.values())
-        # инициализируем игру
-        gm.init_game(*lst)
-        return redirect(url_for("game"))
+    if request.method == "GET":
+        if request.args:
+            # получить данные от GET запроса с уровнем сложности
+            lst: list[str] = list(request.args.values())
+            # инициализируем игру
+            gm.init_game(*lst)
+            return redirect(url_for("game"))
 
-    return render_template('index.html', context=Complex)
+        return render_template('index.html', context=Complex)
 
 
 @app.route("/game", methods=["GET", "POST"])
 def game():
     """- Играем"""
     # проверка если матрица пуста, или еще была не создана,
-    # то вернуть на главную страницу, для повторной инициализации
+    # то вернуть на главную страницу, для повторной инициализации, выбору уровня сложности
     if not gm.field.cells:
         return redirect(url_for("index"))
 
-    # обновить данные ячеек, при клики на кнопку "обновить"
-    if request.args:
-        gm.restart()
-        return redirect(url_for("game"))
-
-    # если get запрос вернулся пустым,
-    # то тогда загружаем страницу с данными нашей матрицы
     if request.method == "GET":
+        # обновить данные ячеек, при клики на кнопку "обновить" (GET запрос)
+        if request.args:
+            gm.restart()
+            return redirect(url_for("game"))
+        # если get запрос вернулся пустым,
+        # то тогда загружаем страницу с данными нашей матрицы
         return render_template('game.html', context=gm)
 
-    # получить значение из формы
-    lst: list[tuple[str, str]] = list(request.form.items())
-    # конвертировать значения из строк в целочисленные значения
-    coord: tuple[int, int] = convert_to_integer(*lst)
-    # передать координаты в обработчик для проверки
-    response: dict = gm.handler(*coord)
+    if request.method == "POST":
+        # получить значение из формы (POST запрос)
+        lst: list[tuple[str, str]] = list(request.form.items())
+        # передать координаты в обработчик для проверки
+        response: dict = gm.handler(*lst)
+        # проверка возврата данных на False,
+        # если данные пришли не пустые то передаем их в сообщение для вывода
+        # данные могут быть как о победе так и проигрыше
+        if response is not None:
+            # передать сообщение результата проверки, после обработки
+            flash(**response)
 
-    # проверка возврата данных на False,
-    # если данные пришли не пустые то передаем их в сообщение для вывода
-    # данные могут быть как о победе так и проигрыше
-    if response is not None:
-        # передать сообщение результата проверки, после обработки
-        flash(**response)
+        """--- Вывод в консоль (шпаргалка) ---"""
+        print_console()
+        """-----------------------------------"""
 
-    """--- Вывод в консоль (шпаргалка) ---"""
+        # обновляем данные поля с ответом flash или без него
+        return render_template('game.html', context=gm)
+
+
+def print_console():
+    """- Вывод в консоль (шпаргалка)"""
     copy_cells = copy.deepcopy(gm.field.cells)
     lst_cells = []
 
@@ -78,21 +86,10 @@ def game():
         for y in range(15):
             cells.append(copy_cells[y][x])
 
-    for cl in copy.deepcopy(gm.field.cells):
+    for cl in copy.deepcopy(lst_cells):
         print(cl)
-    """-----------------------------------"""
-
-    # обновляем данные поля
-    return render_template('game.html', context=gm)
-
-
-def convert_to_integer(tup: tuple) -> tuple[int, int]:
-    """- конвертировать в число"""
-    row, column = tup
-    return int(row), int(column)
 
 
 if __name__ == '__main__':
     app.run()
-
 

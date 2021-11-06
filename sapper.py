@@ -91,7 +91,8 @@ class Cell(object):
         if self.is_mine:
             return "M"
         if self.is_open:
-            return "*"
+            return " "
+
         return f"{self.count_mine_near}"
 
 
@@ -262,8 +263,10 @@ class Game(object):
 
     def handler(self, *args) -> Union[dict, None]:
         """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
+        # конвертировать значения из строк в целочисленные значения
+        coord: tuple[int, int] = self.convert_to_integer(*args)
         # получить объект выбранной ячейки, из поля
-        cell: Cell = self.field.get_cell(*args)
+        cell: Cell = self.field.get_cell(*coord)
 
         # проверка на пустую ячейку,
         # или ячейку с количеством мин
@@ -290,11 +293,21 @@ class Game(object):
         return None
 
     def reset_properties(self):
-        """- обнулить счетчик открытых ячеек"""
+        """- вернуть свойства в первоначальное состояние"""
+        # обнулить счетчик
         Cell.count_open_cells = Values.EMPTY.value
+        # установить флаг в первоначальное состояние
         self.is_flag = False
 
     def restart(self):
         """- перегрузить игру, с выбранным набором сложности, level"""
+        self.reset_properties()
+        # вернуть свойства в первоначальное состояние
         self.field.create_field()
+
+    @staticmethod
+    def convert_to_integer(tup: tuple) -> tuple[int, int]:
+        """- конвертировать полученные данные от кнопки в число"""
+        row, column = tup
+        return int(row), int(column)
 
