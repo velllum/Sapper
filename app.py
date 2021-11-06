@@ -8,12 +8,14 @@ from flask import (
     url_for,
     flash,
 )
+# from flask_socketio import SocketIO
 
 from sapper import Game, Complex
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
 app.config['DEBUG'] = True
+# socket = SocketIO(app)
 
 gm = Game()
 
@@ -56,10 +58,9 @@ def game():
         return render_template('game.html', context=gm)
 
     if request.method == "POST":
-        # получить значение из формы (POST запрос)
-        lst: list[tuple[str, str]] = list(request.form.items())
-        # передать координаты в обработчик для проверки
-        response: dict = gm.handler(*lst)
+        # получить ответ от обработчика, в виде словаря,
+        # для передаче сообщения в шаблон через flash()
+        response: dict = gm.handler()
         # проверка возврата данных на False,
         # если данные пришли не пустые то передаем их в сообщение для вывода
         # данные могут быть как о победе так и проигрыше
@@ -92,4 +93,5 @@ def print_console():
 
 if __name__ == '__main__':
     app.run()
+    # socket.run(app)
 

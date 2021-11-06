@@ -4,6 +4,8 @@ import random
 from enum import Enum
 from typing import Type, List, Union
 
+from flask import request
+
 
 class Complex(int, Enum):
     """- сложность"""
@@ -261,8 +263,10 @@ class Game(object):
         # обнулить счетчик открытых ячеек
         self.reset_properties()
 
-    def handler(self, *args) -> Union[dict, None]:
+    def handler(self) -> Union[dict, None]:
         """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
+        # получить значение из формы (POST запрос)
+        args: list[tuple[str, str]] = list(request.form.items())
         # конвертировать значения из строк в целочисленные значения
         coord: tuple[int, int] = self.convert_to_integer(*args)
         # получить объект выбранной ячейки, из поля
