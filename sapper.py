@@ -285,7 +285,7 @@ class Game(object):
             cell.set_open()
         else:
             # если ячейка пустая, то открыть все рядом пустые ячейки
-            self.field.open_empty_cells_nearby(cl=cell)
+            self.field.open_empty_cells_nearby(obj=cell)
 
         # проверка поражения в игре
         if cell.is_mine is True:
