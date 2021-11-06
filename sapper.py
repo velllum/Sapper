@@ -155,11 +155,11 @@ class Field(object):
                 if cl.id in lt:
                     cl.set_mine()
 
-    def open_empty_cells_nearby(self, cl: Cell):
+    def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""
 
         grid: list = Values.GRID_HVD()
-        queue: list[Cell] = [cl]  # очередь
+        queue: list[Cell] = [obj]  # очередь
 
         while queue:
 
