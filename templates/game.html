@@ -68,6 +68,58 @@
         }
 
     </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.2/socket.io.js" integrity="sha512-zN6KYOtONNTOGXz0RkWX2EpavN9VdIs+2w+To+fhciFv83YA9maUpi2lzZWrOfKXdFIZZomWufBznkyHi3a8oQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+
+        const socket = io();
+
+        // отправить данные на сервер через сокет
+        socket.emit("view_room", {
+
+            username: "username",
+            room: "room"
+
+        });
+
+
+
+        // получить данные от сокета и перебрать
+        socket.on("game", function(data){
+
+            var arrays = data["arrays"];
+            var is_flag = data["is_flag"];
+            var row, column;
+            var value = [];
+
+
+            for (row = 0; row < arrays.length; ++row) {
+
+                for (column = 0; column < arrays[row].length; ++column) {
+
+                    var cl = JSON.parse(arrays[row][column]);
+
+                    if (cl.is_mine) {
+
+                        value.push(arrays[row][column]);
+                        console.log(cl.row, cl.column, cl.id, arrays[row][column]);
+
+
+                    }
+
+                }
+
+            }
+
+            socket.emit("result", {
+
+                result: value
+
+            });
+
+        });
+
+    </script>
 </head>
 <body>
     <form method="POST" id="cl"></form>
@@ -87,6 +139,12 @@
         {%- if not context.is_flag -%}
         {#<!-- кнопки слева от блока (статус is_flag = False) -->#}
             <div>
+                <center>
+                    <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">
+                        <span class="text">Отправить</span>
+                    </button>
+                </center>
+
                 <center>
                     <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">
                         <span class="text">обновить</span>

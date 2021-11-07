@@ -1,4 +1,5 @@
 import copy
+import json
 
 from flask import (
     Flask,
@@ -6,14 +7,16 @@ from flask import (
     request,
     redirect,
     url_for,
-    flash,
+    flash, jsonify,
 )
+from flask_socketio import SocketIO
 
 from sapper import Game, Complex
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
 app.config['DEBUG'] = True
+socket = SocketIO(app)
 
 gm = Game()
 
@@ -30,9 +33,7 @@ def index():
     if request.method == "GET":
         if request.args:
             # получить данные от GET запроса с уровнем сложности
-            lst: list[str] = list(request.args.values())
-            # инициализируем игру
-            gm.init_game(*lst)
+            gm.init_game()
             return redirect(url_for("game"))
 
         return render_template('index.html', context=Complex)
@@ -56,10 +57,8 @@ def game():
         return render_template('game.html', context=gm)
 
     if request.method == "POST":
-        # получить значение из формы (POST запрос)
-        lst: list[tuple[str, str]] = list(request.form.items())
         # передать координаты в обработчик для проверки
-        response: dict = gm.handler(*lst)
+        response: dict = gm.handler()
         # проверка возврата данных на False,
         # если данные пришли не пустые то передаем их в сообщение для вывода
         # данные могут быть как о победе так и проигрыше
@@ -73,6 +72,43 @@ def game():
 
         # обновляем данные поля с ответом flash или без него
         return render_template('game.html', context=gm)
+
+
+@socket.on("view_room")
+def handler_join_room_event(data):
+
+    print(data.get("username"), data.get("room"))
+
+    arrays = [
+        [
+            json.dumps(cell.__dict__)
+            for cell in lst
+        ]
+        for lst in gm.field.cells
+    ]
+
+    socket.emit("game", dict(arrays=arrays, is_flag=gm.is_flag))
+
+
+# @socket.on("game")
+# def template_game():
+#
+#     arrays = [
+#         [
+#             json.dumps(cell.__dict__)
+#             for cell in lst
+#         ]
+#         for lst in gm.field.cells
+#     ]
+#
+#     socket.emit("game", dict(arrays=arrays, is_flag=gm.is_flag))
+
+
+@socket.on("result")
+def result_game(data):
+
+    print(data.get("result"))
+
 
 
 def print_console():
@@ -91,5 +127,5 @@ def print_console():
 
 
 if __name__ == '__main__':
-    app.run()
+    socket.run(app)
 

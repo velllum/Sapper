@@ -4,6 +4,8 @@ import random
 from enum import Enum
 from typing import Type, List, Union
 
+from flask import request
+
 
 class Complex(int, Enum):
     """- сложность"""
@@ -153,11 +155,11 @@ class Field(object):
                 if cl.id in lt:
                     cl.set_mine()
 
-    def open_empty_cells_nearby(self, cl: Cell):
+    def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""
 
         grid: list = Values.GRID_HVD()
-        queue: list[Cell] = [cl]  # очередь
+        queue: list[Cell] = [obj]  # очередь
 
         while queue:
 
@@ -254,15 +256,22 @@ class Game(object):
         self.field: Field = Field()
         self.is_flag: bool = False
 
-    def init_game(self, level: str):
+    def init_game(self):
         """- инициализация игры"""
+        # получить данные из формы от GET запроса,
+        # с данными уровня сложности
+        lst: list[str] = list(request.args.values())
+
         # инициализируем поле, игры
-        self.field.init_field(level=level)
+        self.field.init_field(*lst)
         # обнулить счетчик открытых ячеек
         self.reset_properties()
 
-    def handler(self, *args) -> Union[dict, None]:
+    def handler(self) -> Union[dict, None]:
         """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
+        # получить значение из формы (POST запрос)
+        args: list[tuple[str, str]] = list(request.form.items())
+
         # конвертировать значения из строк в целочисленные значения
         coord: tuple[int, int] = self.convert_to_integer(*args)
         # получить объект выбранной ячейки, из поля
@@ -276,7 +285,7 @@ class Game(object):
             cell.set_open()
         else:
             # если ячейка пустая, то открыть все рядом пустые ячейки
-            self.field.open_empty_cells_nearby(cl=cell)
+            self.field.open_empty_cells_nearby(obj=cell)
 
         # проверка поражения в игре
         if cell.is_mine is True:
@@ -310,4 +319,3 @@ class Game(object):
         """- конвертировать полученные данные от кнопки в число"""
         row, column = tup
         return int(row), int(column)
-
