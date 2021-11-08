@@ -126,12 +126,12 @@ class Field(object):
         """- получить количество не заминированных ячеек"""
         self.non_mined_cells = Values.FULL_CELLS - self.count_mine_field
 
-    def create_matrix(self, cl: Type[Cell]):
+    def create_matrix(self):
         """- создать матрицу 15X15"""
         lst = [
             [
                 # добавляем объект ячейки в матрицу
-                cl(row=row, column=col)
+                Cell(row=row, column=col)
                 for col in range(Values.VERTICAL.value)
             ]
             for row in range(Values.HORIZON.value)
@@ -232,7 +232,7 @@ class Field(object):
     def create_field(self):
         """- создаем поле"""
         # создать матрицу, и заполнить объектами ячейки
-        self.create_matrix(cl=Cell)
+        self.create_matrix()
         # расставить мины
         self.place_mines()
         # делаем подсказки, указываем на количество мин по соседству
