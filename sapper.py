@@ -2,7 +2,7 @@ import operator
 import random
 
 from enum import Enum
-from typing import Type, List, Union
+from typing import Type, List, Union, Tuple
 
 from flask import request
 
@@ -29,7 +29,7 @@ class Values(int, Enum):
     FULL_CELLS = VERTICAL * HORIZON
 
     @staticmethod
-    def GRID_HVD() -> list:
+    def grid() -> List[int]:
         """- список с значениями для обхода ячеек
         по вертикали, горизонтали и диагонали"""
         return [-1, 0, 1]
@@ -142,11 +142,11 @@ class Field(object):
     def place_mines(self):
         """- расставить мины"""
         # получить список с id, уникальными идентификаторами объекта
-        lst: list[int] = [cl.id for cel in self.cells for cl in cel]
+        lst: List[int] = [cl.id for cel in self.cells for cl in cel]
         # перемешать список с id рандомно
         random.shuffle(lst)
         # сделать срез по количеству мин, указанные клиентом
-        lt: list[int] = lst[: self.count_mine_field]
+        lt: List[int] = lst[: self.count_mine_field]
         # перезаписать матрицу, расставить мины,
         # используя перемешанный рандомно список и обрезанный по указателю сложности,
         # полученному от пользователя
@@ -158,8 +158,8 @@ class Field(object):
     def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""
 
-        grid: list = Values.GRID_HVD()
-        queue: list[Cell] = [obj]  # очередь
+        grid: list = Values.grid()
+        queue: List[Cell] = [obj]  # очередь
 
         while queue:
 
@@ -202,7 +202,7 @@ class Field(object):
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
 
-        grid: list = Values.GRID_HVD()
+        grid: list = Values.grid()
 
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
@@ -260,7 +260,7 @@ class Game(object):
         """- инициализация игры"""
         # получить данные из формы от GET запроса,
         # с данными уровня сложности
-        lst: list[str] = list(request.args.values())
+        lst: List[str] = list(request.args.values())
 
         # инициализируем поле, игры
         self.field.init_field(*lst)
@@ -270,10 +270,10 @@ class Game(object):
     def handler(self) -> Union[dict, None]:
         """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
         # получить значение из формы (POST запрос)
-        args: list[tuple[str, str]] = list(request.form.items())
+        args: List[Tuple[str, str]] = list(request.form.items())
 
         # конвертировать значения из строк в целочисленные значения
-        coord: tuple[int, int] = self.convert_to_integer(*args)
+        coord: Tuple[int, int] = self.convert_to_integer(*args)
         # получить объект выбранной ячейки, из поля
         cell: Cell = self.field.get_cell(*coord)
 
@@ -315,8 +315,7 @@ class Game(object):
         self.field.create_field()
 
     @staticmethod
-    def convert_to_integer(tup: tuple) -> tuple[int, int]:
+    def convert_to_integer(tup: tuple) -> Tuple[int, int]:
         """- конвертировать полученные данные от кнопки в число"""
         row, column = tup
         return int(row), int(column)
-

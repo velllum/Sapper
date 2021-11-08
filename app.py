@@ -90,4 +90,3 @@ def print_console():
 
 if __name__ == '__main__':
     app.run()
-
