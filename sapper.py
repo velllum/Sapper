@@ -305,6 +305,7 @@ class Game(object):
         """- вернуть свойства в первоначальное состояние"""
         # обнулить счетчик
         Cell.count_open_cells = Values.EMPTY.value
+        Cell.count_id = Values.EMPTY.value
         # установить флаг в первоначальное состояние
         self.is_flag = False
 
