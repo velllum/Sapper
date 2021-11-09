@@ -9,7 +9,7 @@ from flask import (
     url_for,
     flash,
 )
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit, send
 
 from sapper import Game, Complex
 
@@ -67,7 +67,7 @@ def game():
             flash(**response)
 
         """--- Вывод в консоль (шпаргалка) ---"""
-        print_console()
+        # print_console()
         """-----------------------------------"""
 
         # обновляем данные поля с ответом flash или без него
@@ -87,28 +87,13 @@ def handler_join_room_event(data):
         for lst in gm.field.cells
     ]
 
-    socket.emit("game", dict(arrays=arrays, is_flag=gm.is_flag))
-
-
-# @socket.on("game")
-# def template_game():
-#
-#     arrays = [
-#         [
-#             json.dumps(cell.__dict__)
-#             for cell in lst
-#         ]
-#         for lst in gm.field.cells
-#     ]
-#
-#     socket.emit("game", dict(arrays=arrays, is_flag=gm.is_flag))
+    emit("game", dict(arrays=arrays, is_flag=gm.is_flag))
 
 
 @socket.on("result")
 def result_game(data):
-    ...
-    # print(data.get("result"))
-
+    lst = data["response"]
+    print(lst, type(lst))
 
 
 def print_console():

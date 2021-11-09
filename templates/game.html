@@ -82,17 +82,13 @@
         });
 
 
-
         // получить данные от сокета и перебрать
         socket.on("game", function(data){
 
             var arrays = data["arrays"];
             var is_flag = data["is_flag"];
             var row, column;
-            var value = [];
-
             var container = document.getElementsByClassName("container")[0];
-
 
             for (row = 0; row < arrays.length; ++row) {
 
@@ -111,25 +107,30 @@
 
                     button.setAttribute("name", cell.row);
                     button.setAttribute("value", cell.column);
-                    button.setAttribute("form", "cl");
-                    button.setAttribute("type", "submit");
+                    button.setAttribute("type", "button");
                     button.className = "btn";
 
                     button.innerHTML = cell.count_mine_near
-
-                    value.push(arrays[row][column]);
-
-                    console.log(cell.row, cell.column, cell.id);
 
                 }
 
             }
 
-            socket.emit("result", {
+            var button = document.querySelectorAll('.container [type="button"]');
 
-                result: value
+            for (var i = 0; i < button.length; i++) {
+                button[i].addEventListener('click', raz, false);
+            }
 
-            });
+            function raz(element) {
+                socket.emit("result", {
+
+                    response: [this.value, this.name]
+
+                });
+
+                console.log([this.value, this.name]);
+            }
 
         });
 
@@ -152,94 +153,23 @@
         <div class="container">
             <div>
                 <center>
-                    <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">
+                    <button id="btn" class="btn_left" value="restart" type="submit" name="method">
                         <span class="text">Отправить</span>
                     </button>
                 </center>
 
                 <center>
-                    <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">
+                    <button class="btn_left" value="restart" type="submit" name="method">
                         <span class="text">обновить</span>
                     </button>
                 </center>
 
                 <center>
-                    <button class="btn_left" type="submit" form="cl" formaction="{{ url_for('index') }}">
+                    <button class="btn_left" type="submit">
                         <span class="text">выбор сложности</span>
                     </button>
                 </center>
             </div>
         </div>
-
-<!--    <div class="container">-->
-
-<!--        {%- if not context.is_flag -%}-->
-<!--        {#&lt;!&ndash; кнопки слева от блока (статус is_flag = False) &ndash;&gt;#}-->
-<!--            <div>-->
-<!--                <center>-->
-<!--                    <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">-->
-<!--                        <span class="text">Отправить</span>-->
-<!--                    </button>-->
-<!--                </center>-->
-
-<!--                <center>-->
-<!--                    <button class="btn_left" value="restart" type="submit" form="cl" name="method" formmethod="GET">-->
-<!--                        <span class="text">обновить</span>-->
-<!--                    </button>-->
-<!--                </center>-->
-
-<!--                <center>-->
-<!--                    <button class="btn_left" type="submit" form="cl" formaction="{{ url_for('index') }}">-->
-<!--                        <span class="text">выбор сложности</span>-->
-<!--                    </button>-->
-<!--                </center>-->
-<!--            </div>-->
-<!--        {%- endif -%}-->
-
-<!--        {%- for cells in context.field.cells %}-->
-<!--        <div>-->
-<!--            {%- for cell in cells %}-->
-<!--            <div>-->
-<!--                {%- if not context.is_flag -%}-->
-
-<!--                    {#&lt;!&ndash; отображать данный блок с ячейками, пока флаг False (статус is_flag = False) &ndash;&gt;#}-->
-<!--                    {%- if cell.is_open -%}-->
-<!--                        {#&lt;!&ndash; отобразить ячейки, если они были открыты (статус is_open = True)  &ndash;&gt;#}-->
-<!--                        <button class="btn" style="color: blue" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl" disabled><b>-->
-<!--                            {%- if cell.count_mine_near != 0 -%}-->
-<!--                                <span style="color: blue;">{{ cell.count_mine_near }}</span>-->
-<!--                            {%- endif -%}-->
-<!--                        </b></button>-->
-<!--                    {%- else -%}-->
-<!--                       {# &lt;!&ndash; отобразить ячейки, если они пока не были открыты, то есть закрытыми (статус is_open = False) &ndash;&gt;#}-->
-<!--                        <button class="btn" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl">-->
-<!--                            {#-->
-<!--                                &lt;!&ndash; Для просмотра подсказок в шаблоне раскомментировать блок&ndash;&gt;-->
-<!--                                {%- if cell.is_mine -%}-->
-<!--                                    <em>М</em>-->
-<!--                                {%- elif cell.count_mine_near != 0 -%}-->
-<!--                                    <em>{{ cell.count_mine_near }}</em>-->
-<!--                                {%- endif -%}-->
-<!--                            #}-->
-<!--                        </button>-->
-<!--                    {%- endif -%}-->
-
-<!--                {#&lt;!&ndash; вывести данный блок с ячейками, если флаг True (статус is_flag = True) &ndash;&gt;#}-->
-<!--                {%- else -%}-->
-<!--                    {#&lt;!&ndash; отображение ячеек после победы или проигрыша &ndash;&gt;#}-->
-<!--                    <button class="btn" value="{{ cell.column }}" type="submit" name="{{ cell.row }}" form="cl" disabled><b>-->
-<!--                        {%- if cell.is_mine -%}-->
-<!--                            <span style="color: red;">М</span>-->
-<!--                        {%- elif cell.is_count_mine() -%}-->
-<!--                            <span style="color: blue;">{{ cell.count_mine_near }}</span>-->
-<!--                        {%- endif -%}-->
-<!--                    </b></button>-->
-<!--                {%- endif -%}-->
-
-<!--            </div>-->
-<!--            {% endfor -%}-->
-<!--        </div>-->
-<!--        {% endfor -%}-->
-<!--    </div>-->
 </body>
 </html>
