@@ -2,7 +2,7 @@ import operator
 import random
 
 from enum import Enum
-from typing import Type, List, Union, Tuple
+from typing import List, Union, Tuple
 
 from flask import request
 
@@ -240,6 +240,8 @@ class Field(object):
         # получить количество не заминированных ячеек
         self.get_non_mined_cells()
 
+        print(Cell.count_id)
+
     def init_field(self, level: str):
         """- инициализируем поле, загружаем поле"""
         # получаем уровень сложности, выбранный пользователем
@@ -303,8 +305,9 @@ class Game(object):
 
     def reset_properties(self):
         """- вернуть свойства в первоначальное состояние"""
-        # обнулить счетчик
+        # обнулить счетчики для подсчета открытых ячеек, создания id
         Cell.count_open_cells = Values.EMPTY.value
+        Cell.count_id = Values.EMPTY.value
         # установить флаг в первоначальное состояние
         self.is_flag = False
 
