@@ -7,7 +7,7 @@ from flask import (
     request,
     redirect,
     url_for,
-    flash, jsonify,
+    flash,
 )
 from flask_socketio import SocketIO
 
@@ -106,8 +106,8 @@ def handler_join_room_event(data):
 
 @socket.on("result")
 def result_game(data):
-
-    print(data.get("result"))
+    ...
+    # print(data.get("result"))
 
 
 
