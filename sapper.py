@@ -240,8 +240,6 @@ class Field(object):
         # получить количество не заминированных ячеек
         self.get_non_mined_cells()
 
-        print(Cell.count_id)
-
     def init_field(self, level: str):
         """- инициализируем поле, загружаем поле"""
         # получаем уровень сложности, выбранный пользователем
