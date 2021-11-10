@@ -73,21 +73,15 @@
 
         const socket = io();
 
-        // отправить данные на сервер через сокет
-        socket.emit("view_room", {
-
-            username: "username",
-            room: "room"
-
-        });
-
-
         // получить данные от сокета и перебрать
+
+        // TODO: написать чтоб загрузка, инициализация данных проходила вне зависимости от сокета
+
         socket.on("game", function(data){
 
             var arrays = data["arrays"];
-            var is_flag = data["is_flag"];
             var row, column;
+
             var container = document.getElementsByClassName("container")[0];
 
             for (row = 0; row < arrays.length; ++row) {
@@ -116,13 +110,15 @@
 
             }
 
+            // получить данные из атрибутов нажатой кнопки на поле
             var button = document.querySelectorAll('.container [type="button"]');
 
             for (var i = 0; i < button.length; i++) {
-                button[i].addEventListener('click', raz, false);
+                button[i].addEventListener('click', requestSocket, false);
             }
 
-            function raz(element) {
+            // функция отправки данных на сервер
+            function requestSocket(element) {
                 socket.emit("result", {
 
                     response: [this.value, this.name]
@@ -135,7 +131,6 @@
         });
 
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 </head>
 <body>
     <form method="POST" id="cl"></form>
