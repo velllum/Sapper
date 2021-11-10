@@ -35,18 +35,17 @@ class Values(int, Enum):
         return [-1, 0, 1]
 
 
-class Cell(object):
+class Cell:
     """- ячейки"""
 
-    count_id: int = Values.EMPTY.value
     count_open_cells: int = Values.EMPTY.value
 
-    def __init__(self, row, column):
+    def __init__(self, row, column, cl_id):
         self.is_mine: bool = False  # ячейка мина или нет
         self.is_open: bool = False  # ячейка скрыто или нет
         self.row: int = row  # номер строки
         self.column: int = column  # номер колонки
-        self.id: int = Cell.create_id()  # порядковый номер
+        self.id: int = cl_id  # порядковый номер
         self.count_mine_near: int = Values.EMPTY.value  # количество мин находящиеся рядом
         self.open_cells: int = Values.EMPTY.value  # количество открытых ячеек, по умолчанию ноль
 
@@ -81,12 +80,6 @@ class Cell(object):
         """- увеличить количество ячеек, которые были открыты"""
         cls.count_open_cells += Values.RATIO.value
 
-    @classmethod
-    def create_id(cls) -> int:
-        """- создать идентификационный номер ячейки"""
-        cls.count_id += Values.RATIO.value
-        return cls.count_id
-
     def __repr__(self):
         """- вывод матрицы с данными
         для отображении шпаргалки в консоли"""
@@ -98,8 +91,10 @@ class Cell(object):
         return f"{self.count_mine_near}"
 
 
-class Field(object):
+class Field:
     """- поле"""
+
+    count_id: int = Values.EMPTY.value
 
     def __init__(self):
         self.cells: List[List[Cell]] = []
@@ -131,13 +126,19 @@ class Field(object):
         lst = [
             [
                 # добавляем объект ячейки в матрицу
-                Cell(row=row, column=col)
+                Cell(row=row, column=col, cl_id=Field.create_id())
                 for col in range(Values.VERTICAL.value)
             ]
             for row in range(Values.HORIZON.value)
         ]
 
         self.cells = lst
+
+    @classmethod
+    def create_id(cls) -> int:
+        """- создать идентификационный номер ячейки"""
+        cls.count_id += Values.RATIO.value
+        return cls.count_id
 
     def place_mines(self):
         """- расставить мины"""
@@ -249,7 +250,7 @@ class Field(object):
         self.create_field()
 
 
-class Game(object):
+class Game:
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
     def __init__(self):

@@ -3,6 +3,10 @@
 
 `pip install flask`
 
+или так 
+
+`pip install -r req.txt`
+
 запустить можно командой через терминал Pycharm (Terminal):
 `python app.py`
 
