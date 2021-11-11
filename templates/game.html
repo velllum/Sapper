@@ -84,7 +84,7 @@
 
     <div class="container">
 
-        {%- if not context.is_flag -%}
+        {%- if not context.field.is_disabled -%}
         {#<!-- кнопки слева от блока (статус is_flag = False) -->#}
             <div>
                 <center>
@@ -105,7 +105,7 @@
         <div>
             {%- for cell in cells %}
             <div>
-                {%- if not context.is_flag -%}
+                {%- if not context.field.is_disabled -%}
 
                     {#<!-- отображать данный блок с ячейками, пока флаг False (статус is_flag = False) -->#}
                     {%- if cell.is_open -%}
@@ -125,7 +125,7 @@
                                 {%- elif cell.count_mine_near != 0 -%}
                                     <em>{{ cell.count_mine_near }}</em>
                                 {%- endif -%}
-                            #}
+                            #} {{ cell.id }}
                         </button>
                     {%- endif -%}
 

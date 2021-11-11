@@ -2,7 +2,7 @@ import operator
 import random
 
 from enum import Enum
-from typing import List, Union, Tuple
+from typing import List, Tuple, Optional
 
 from flask import request
 
@@ -38,8 +38,6 @@ class Values(int, Enum):
 class Cell:
     """- ячейки"""
 
-    count_open_cells: int = Values.EMPTY.value
-
     def __init__(self, row, column, cl_id):
         self.is_mine: bool = False  # ячейка мина или нет
         self.is_open: bool = False  # ячейка скрыто или нет
@@ -60,9 +58,6 @@ class Cell:
 
     def set_open(self):
         """- установить ячейку из скрытой в открытую"""
-        # счетчик подсчета количества открытых ячеек
-        if self.is_open is not True:
-            Cell.set_count_open_cells()
         self.is_open = True
 
     def is_count_mine(self):
@@ -70,15 +65,6 @@ class Cell:
         if self.count_mine_near != Values.EMPTY.value:
             return True
         return False
-
-    @classmethod
-    def get_count_open_cells(cls):
-        return cls.count_open_cells
-
-    @classmethod
-    def set_count_open_cells(cls):
-        """- увеличить количество ячеек, которые были открыты"""
-        cls.count_open_cells += Values.RATIO.value
 
     def __repr__(self):
         """- вывод матрицы с данными
@@ -94,14 +80,15 @@ class Cell:
 class Field:
     """- поле"""
 
-    count_id: int = Values.EMPTY.value
-
     def __init__(self):
-        self.cells: List[List[Cell]] = []
+        self.cells: List[List[Cell]] = []  # матрица с ячейками
         self.count_mine_field: int = Values.EMPTY.value  # уровень сложности, по умолчанью ноль
         self.non_mined_cells: int = Values.EMPTY.value  # количество не заминированных ячеек, по умолчанию ноль
+        self.count_id: int = Values.EMPTY.value  # счетчик созданных id ячеек
+        self.count_open_cells: int = Values.EMPTY.value  # счетчик количества открытых ячеек на поле
+        self.is_disabled: bool = False  # состояние поля, для показа в шаблоне представления (показать или скрыть)
 
-    def get_cell(self, rw: int, cl: int) -> Union[Cell, None]:
+    def get_cell(self, rw: int, cl: int) -> Optional[Cell]:
         """- получить значение ячейки по номеру столбца и строки"""
         first: int = Values.FIRST_INDEX.value
         second: int = Values.SECOND_INDEX.value
@@ -110,12 +97,29 @@ class Field:
             return None
         return self.cells[rw][cl]
 
-    def set_difficulty(self, st: str):
-        """- установить значение уровня сложности"""
+    def set_count_mine_field(self, st: str):
+        """- установить количество мин, по выбранному уровню сложности"""
         for cx in Complex:
             if st == cx.name:
                 self.count_mine_field = cx.value
                 break
+
+    def set_open_cell(self, cl: Cell):
+        """- поменять значения с закрытой на открытое"""
+        # проверка открыта ли ячейка поля
+        if not cl.is_open:
+            # подсчет количества открытых ячеек
+            self.set_count_open_cells()
+        cl.set_open()
+
+    def set_count_open_cells(self):
+        """- увеличить количество ячеек, которые были открыты"""
+        self.count_open_cells += Values.RATIO.value
+        return self.count_open_cells
+
+    def reset_count_open_cells(self):
+        """- сбросить счетчик количества открытых ячеек на поле"""
+        self.count_open_cells = Values.EMPTY.value
 
     def get_non_mined_cells(self):
         """- получить количество не заминированных ячеек"""
@@ -126,7 +130,7 @@ class Field:
         lst = [
             [
                 # добавляем объект ячейки в матрицу
-                Cell(row=row, column=col, cl_id=Field.create_id())
+                Cell(row=row, column=col, cl_id=self.create_id())
                 for col in range(Values.VERTICAL.value)
             ]
             for row in range(Values.HORIZON.value)
@@ -134,11 +138,14 @@ class Field:
 
         self.cells = lst
 
-    @classmethod
-    def create_id(cls) -> int:
+    def create_id(self) -> int:
         """- создать идентификационный номер ячейки"""
-        cls.count_id += Values.RATIO.value
-        return cls.count_id
+        self.count_id += Values.RATIO.value
+        return self.count_id
+
+    def reset_count_id(self):
+        """- сбросить счетчик, созданных id номеров"""
+        self.count_id = Values.EMPTY.value
 
     def place_mines(self):
         """- расставить мины"""
@@ -177,28 +184,28 @@ class Field:
 
                     # получить переменные для проверки границ матрицы
                     rw: int = operator.add(cell.row, row_dx)
-                    cl: int = operator.add(cell.column, col_dx)
+                    col: int = operator.add(cell.column, col_dx)
 
                     # проверяем границы матрицы, если значения не существует то пропускаем
-                    response: Cell = self.get_cell(rw=rw, cl=cl)
+                    cl: Cell = self.get_cell(rw=rw, cl=col)
 
-                    if not response:
+                    if not cl:
                         continue
 
                     # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
-                    if response.is_mine:
+                    if cl.is_mine:
                         continue
 
                     # если в свойстве ответа количество мин не равен нолю (пустоте),
                     # и у ячейки статус не открыта, то добавляем ее в очередь
-                    if not response.count_mine_near and not response.is_open:
-                        queue.append(response)
+                    if not cl.count_mine_near and not cl.is_open:
+                        queue.append(cl)
                     # иначе у ячейки ставим статус открытой is_open = True
                     else:
-                        response.set_open()
+                        self.set_open_cell(cl)
 
             # добавляем текущей ячейки (от которой ведется обход) статус открыта is_open = True
-            cell.set_open()
+            self.set_open_cell(cell)
 
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
@@ -230,6 +237,14 @@ class Field:
                         # если проверки проходят, то меняем значение в нашей матрице
                         response.set_count_mine()
 
+    def reset_properties(self):
+        """- вернуть свойства в первоначальное состояние"""
+        # обнулить счетчики для подсчета открытых ячеек, создания id
+        self.reset_count_open_cells()
+        self.reset_count_id()
+        # установить флаг в первоначальное состояние
+        self.is_disabled = False
+
     def create_field(self):
         """- создаем поле"""
         # создать матрицу, и заполнить объектами ячейки
@@ -240,12 +255,14 @@ class Field:
         self.fill_count_mine_nearby()
         # получить количество не заминированных ячеек
         self.get_non_mined_cells()
+        # обнулить счетчики и значение свойст к первоначальному состоянию, после предедущей игры
+        self.reset_properties()
 
     def init_field(self, level: str):
         """- инициализируем поле, загружаем поле"""
         # получаем уровень сложности, выбранный пользователем
         # и устанавливаем какое будет количество мин на поле
-        self.set_difficulty(st=level)
+        self.set_count_mine_field(st=level)
         # создаем поле
         self.create_field()
 
@@ -255,20 +272,26 @@ class Game:
 
     def __init__(self):
         self.field: Field = Field()
-        self.is_flag: bool = False
 
     def init_game(self):
         """- инициализация игры"""
         # получить данные из формы от GET запроса,
         # с данными уровня сложности
         lst: List[str] = list(request.args.values())
-
         # инициализируем поле, игры
         self.field.init_field(*lst)
-        # обнулить счетчик открытых ячеек
-        self.reset_properties()
 
-    def handler(self) -> Union[dict, None]:
+    def restart(self):
+        """- перегрузить игру, с выбранным набором сложности, level"""
+        self.field.create_field()
+
+    @staticmethod
+    def convert_to_integer(tup: tuple) -> Tuple[int, int]:
+        """- конвертировать полученные данные от кнопки в число"""
+        row, column = tup
+        return int(row), int(column)
+
+    def handler(self) -> Optional[dict]:
         """- обработчик полученной ячейки, проверка на поражения и на победу, на пустоту"""
         # получить значение из формы (POST запрос)
         args: List[Tuple[str, str]] = list(request.form.items())
@@ -280,44 +303,24 @@ class Game:
 
         # проверка на пустую ячейку,
         # или ячейку с количеством мин
-        if cell.is_count_mine() is True:
+        if cell.is_count_mine():
             # если не пустая, а имеет значение мин рядом,
             # то переводим в открытое состояние
-            cell.set_open()
+            self.field.set_open_cell(cell)
         else:
             # если ячейка пустая, то открыть все рядом пустые ячейки
             self.field.open_empty_cells_nearby(obj=cell)
 
         # проверка поражения в игре
-        if cell.is_mine is True:
+        if cell.is_mine:
             # проверка на поражение в игре, если пользователь столкнулся с миной
             # если поражение передаем словарь с сообщение о проигрыше и имя стиля класса, для подсветки
-            self.is_flag = True
+            self.field.is_disabled = True
             return dict(message="ВЫ ПРОИГРАЛИ", category='error')
 
-        if Cell.count_open_cells >= self.field.non_mined_cells:
+        if self.field.count_open_cells >= self.field.non_mined_cells:
             # если победа передаем словарь с сообщение о победе и имя стиля класса, для подсветки
-            self.is_flag = True
+            self.field.is_disabled = True
             return dict(message="ВЫ ВЫГРАЛИ, УРА!!!", category='success')
 
         return None
-
-    def reset_properties(self):
-        """- вернуть свойства в первоначальное состояние"""
-        # обнулить счетчики для подсчета открытых ячеек, создания id
-        Cell.count_open_cells = Values.EMPTY.value
-        Cell.count_id = Values.EMPTY.value
-        # установить флаг в первоначальное состояние
-        self.is_flag = False
-
-    def restart(self):
-        """- перегрузить игру, с выбранным набором сложности, level"""
-        self.reset_properties()
-        # вернуть свойства в первоначальное состояние
-        self.field.create_field()
-
-    @staticmethod
-    def convert_to_integer(tup: tuple) -> Tuple[int, int]:
-        """- конвертировать полученные данные от кнопки в число"""
-        row, column = tup
-        return int(row), int(column)
