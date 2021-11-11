@@ -267,6 +267,32 @@ class Field:
         self.create_field()
 
 
+class ColumnIterator:
+    """- итератор обхода по колонкам"""
+
+    def __init__(self, grid):
+        self.grid: List[int] = grid
+
+    def __next__(self):
+        ...
+
+    def __iter__(self):
+        return self
+
+
+class RowIterator:
+    """- итератор обхода по строкам"""
+
+    def __init__(self, grid):
+        self.grid: List[int] = grid
+
+    def __next__(self) -> ColumnIterator:
+        return ColumnIterator(self.grid)
+
+    def __iter__(self):
+        return self
+
+
 class Game:
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
