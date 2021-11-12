@@ -29,7 +29,7 @@ class Values(int, Enum):
     FULL_CELLS = VERTICAL * HORIZON
 
     @staticmethod
-    def grid() -> List[int]:
+    def graph() -> List[int]:
         """- список с значениями для обхода ячеек
         по вертикали, горизонтали и диагонали"""
         return [-1, 0, 1]
@@ -69,12 +69,12 @@ class Cell:
     def __repr__(self):
         """- вывод матрицы с данными
         для отображении шпаргалки в консоли"""
-        if self.is_mine:
-            return "M"
-        if self.is_open:
-            return " "
+        # if self.is_mine:
+        #     return "M"
+        # if self.is_open:
+        #     return " "
 
-        return f"{self.count_mine_near}"
+        return f"{self.id}"
 
 
 class Field:
@@ -166,7 +166,7 @@ class Field:
     def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""
 
-        grid: list = Values.grid()
+        grid: list = Values.graph()
         queue: List[Cell] = [obj]  # очередь
 
         while queue:
@@ -192,9 +192,9 @@ class Field:
                     if not cl:
                         continue
 
-                    # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
-                    if cl.is_mine:
-                        continue
+                    # # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
+                    # if cl.is_mine:
+                    #     continue
 
                     # если в свойстве ответа количество мин не равен нолю (пустоте),
                     # и у ячейки статус не открыта, то добавляем ее в очередь
@@ -210,7 +210,7 @@ class Field:
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
 
-        grid: list = Values.grid()
+        grid: list = Values.graph()
 
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
@@ -226,16 +226,16 @@ class Field:
 
                         # получить переменные для проверки границ матрицы
                         rw: int = operator.add(cs.row, row_dx)
-                        cl: int = operator.add(cs.column, col_dx)
+                        col: int = operator.add(cs.column, col_dx)
 
                         # проверяем границы матрицы, если значения не существует то пропускаем
-                        response = self.get_cell(rw=rw, cl=cl)
+                        cl = self.get_cell(rw=rw, cl=col)
 
-                        if not response:
+                        if not cl:
                             continue
 
                         # если проверки проходят, то меняем значение в нашей матрице
-                        response.set_count_mine()
+                        cl.set_count_mine()
 
     def reset_properties(self):
         """- вернуть свойства в первоначальное состояние"""
@@ -262,35 +262,9 @@ class Field:
         """- инициализируем поле, загружаем поле"""
         # получаем уровень сложности, выбранный пользователем
         # и устанавливаем какое будет количество мин на поле
-        self.set_count_mine_field(st=level)
+        self.set_count_mine_field(level)
         # создаем поле
         self.create_field()
-
-
-class ColumnIterator:
-    """- итератор обхода по колонкам"""
-
-    def __init__(self, grid):
-        self.grid: List[int] = grid
-
-    def __next__(self):
-        ...
-
-    def __iter__(self):
-        return self
-
-
-class RowIterator:
-    """- итератор обхода по строкам"""
-
-    def __init__(self, grid):
-        self.grid: List[int] = grid
-
-    def __next__(self) -> ColumnIterator:
-        return ColumnIterator(self.grid)
-
-    def __iter__(self):
-        return self
 
 
 class Game:
@@ -335,7 +309,7 @@ class Game:
             self.field.set_open_cell(cell)
         else:
             # если ячейка пустая, то открыть все рядом пустые ячейки
-            self.field.open_empty_cells_nearby(obj=cell)
+            self.field.open_empty_cells_nearby(cell)
 
         # проверка поражения в игре
         if cell.is_mine:
@@ -350,3 +324,82 @@ class Game:
             return dict(message="ВЫ ВЫГРАЛИ, УРА!!!", category='success')
 
         return None
+
+
+class ColumnIterator:
+    """- итератор обхода по колонкам"""
+
+    def __init__(self, field, cell, graph, row):
+        self.field: Field = field
+        self.cell: Cell = cell
+        self.graph: List[int] = graph
+        self.row: int = row
+        self.count: int = Values.EMPTY.value
+
+    def __len__(self):
+        return len(self.graph) - Values.RATIO.value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if len(self) < self.count:
+            raise StopIteration
+
+        column = self.graph[self.count]
+        self.count += 1
+
+        # получить переменные для проверки границ матрицы
+        rw: int = operator.add(self.cell.row, self.row)
+        col: int = operator.add(self.cell.column, column)
+
+        # проверяем границы матрицы, если значения не существует то пропускаем
+        cell = self.field.get_cell(rw=rw, cl=col)
+
+        if cell:
+            return cell
+
+
+
+class RowIterator:
+    """- итератор обхода по строкам"""
+
+    def __init__(self, field, cell):
+        self.field: Field = field
+        self.cell: Cell = cell
+        self.graph: List[int] = Values.graph()
+        self.count: int = Values.EMPTY.value
+
+    def __len__(self):
+        return len(self.graph) - Values.RATIO.value
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> ColumnIterator:
+        if len(self) < self.count:
+            raise StopIteration
+
+        row = self.graph[self.count]
+        self.count += 1
+
+        return ColumnIterator(self.field, self.cell, self.graph, row)
+
+
+# ================================
+
+
+field = Field()
+field.init_field(Complex.EASY.name)
+
+for cell in field.cells:
+    print(cell)
+
+rt = RowIterator(field, field.get_cell(2, 5))
+
+for row in rt:
+    for col in row:
+        print(col.id)
+
+
+
