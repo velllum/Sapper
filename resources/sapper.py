@@ -164,21 +164,9 @@ class Field:
                 if cl.id in lt:
                     cl.set_mine()
 
-    def iterate_cells(self, row: int, col: int):
-        """- перебрать ячейки и если ячейка не является """
-
-        # собрать объекты всех ячеек что рядом в общий список
-        cells = [
-            cell
-            # создаем объект итератора по ячейкам, относительно текущей ячейки
-            for iterator in it.Iterator(field=self, cell=self.get_cell(rw=row, cl=col))
-            # перебираем вложенный итератор
-            for cell in iterator
-            # делаем проверку на пустоту
-            if cell
-        ]
-
-        return cells
+    def iterate_cells(self, row: int, col: int) -> List[Cell]:
+        """- получить ячейки через итерируемы объект"""
+        return it.Iterator.iterate_object(field=self, cell=self.get_cell(rw=row, cl=col))
 
     def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""

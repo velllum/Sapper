@@ -1,5 +1,5 @@
 import operator
-from typing import List, Optional
+from typing import List
 
 import resources as sp
 
@@ -8,24 +8,32 @@ class BaseIterator:
     """- базовый класс итератора"""
 
     def __init__(self, cell, field):
-        self.cell: sp.Cell = cell
-        self.field: sp.Field = field
-        self.graph: List[int] = sp.Values.graph()
-        self.count: int = sp.Values.EMPTY.value
+        self.cell: sp.Cell = cell  # объект ячейки
+        self.field: sp.Field = field  # объект поля
+        self.graph: List[int] = sp.Values.graph()  # берем список с заготовленными значениями для обхода
+        self.count: int = sp.Values.EMPTY.value  # счетчик итераций
 
     def __iter__(self):
+        """- переопределяем метод получения объекта итерации"""
         return self
 
     def __next__(self):
+        """- переопределяем метод текущей итерации"""
+
+        # проверяем конец последовательности
         if len(self) < self.count:
             raise StopIteration
 
+        # берем значение из списка [-1, 0, 1]
         coord = self.graph[self.count]
+
+        # увеличиваем счетчик
         self.count += 1
 
         return coord
 
     def __len__(self):
+        """- переопределяем метод подсчета длинны последовательности """
         return len(self.graph) - sp.Values.RATIO.value
 
     @staticmethod
@@ -34,7 +42,7 @@ class BaseIterator:
         return operator.add(coord_a, coord_b)
 
 
-class AggregateIterator(BaseIterator):
+class ColumnIterator(BaseIterator):
     """- итератор обхода по колонкам"""
 
     def __init__(self, coord_row, cell, field):
@@ -53,18 +61,45 @@ class AggregateIterator(BaseIterator):
         return cell
 
 
-class Iterator(BaseIterator):
+class RowIterator(BaseIterator):
     """- итератор обхода по строкам"""
 
     def __init__(self, field, cell):
         super().__init__(cell, field)
         self.cell: sp.Cell = cell
 
-    def __next__(self) -> AggregateIterator:
+    def __next__(self) -> ColumnIterator:
         coord_row = super().__next__()
 
-        return AggregateIterator(
+        iterator = ColumnIterator(
             coord_row=coord_row,
             cell=self.cell,
             field=self.field
         )
+
+        return iterator
+
+
+class Iterator:
+    """- получаем данные от клиента"""
+
+    @classmethod
+    def iterate_object(cls, field: sp.Field, cell: sp.Cell) -> List[sp.Cell]:
+        """- перебрать итерируемый объект и добавить его в список если он не None"""
+
+        # собрать объекты всех ячеек что рядом в общий список
+        cells = [
+            cl
+            # создаем объект итератора по ячейкам, относительно текущей ячейки
+            for itr in RowIterator(field, cell)
+            # перебираем вложенный итератор
+            for cl in itr
+            # делаем проверку на пустоту
+            if cl
+        ]
+
+        return cells
+
+
+
+
