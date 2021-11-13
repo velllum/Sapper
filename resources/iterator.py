@@ -84,7 +84,7 @@ class Iterator:
     """- получаем данные от клиента"""
 
     @classmethod
-    def iterate_object(cls, field: sp.Field, cell: sp.Cell) -> List[sp.Cell]:
+    def iterate_object(cls, field, cell) -> List:
         """- перебрать итерируемый объект и добавить его в список если он не None"""
 
         # собрать объекты всех ячеек что рядом в общий список
