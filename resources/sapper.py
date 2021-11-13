@@ -1,10 +1,11 @@
-import operator
 import random
 
 from enum import Enum
 from typing import List, Tuple, Optional
 
 from flask import request
+
+import resources as it
 
 
 class Complex(int, Enum):
@@ -69,12 +70,12 @@ class Cell:
     def __repr__(self):
         """- вывод матрицы с данными
         для отображении шпаргалки в консоли"""
-        # if self.is_mine:
-        #     return "M"
-        # if self.is_open:
-        #     return " "
+        if self.is_mine:
+            return "M"
+        if self.is_open:
+            return " "
 
-        return f"{self.id}"
+        return f"{self.count_mine_near}"
 
 
 class Field:
@@ -163,10 +164,25 @@ class Field:
                 if cl.id in lt:
                     cl.set_mine()
 
+    def iterate_cells(self, row: int, col: int):
+        """- перебрать ячейки и если ячейка не является """
+
+        # собрать объекты всех ячеек что рядом в общий список
+        cells = [
+            cell
+            # создаем объект итератора по ячейкам, относительно текущей ячейки
+            for iterator in it.Iterator(field=self, cell=self.get_cell(rw=row, cl=col))
+            # перебираем вложенный итератор
+            for cell in iterator
+            # делаем проверку на пустоту
+            if cell
+        ]
+
+        return cells
+
     def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""
 
-        grid: list = Values.graph()
         queue: List[Cell] = [obj]  # очередь
 
         while queue:
@@ -178,31 +194,19 @@ class Field:
             if cell.is_open:
                 continue
 
-            # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
-            for row_dx in grid:
-                for col_dx in grid:
+            # перебрать все ячейки, относительно текущей ячейки, через объект итератора,
+            for cl in self.iterate_cells(row=cell.row, col=cell.column):
+                # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
+                if cl.is_mine:
+                    continue
 
-                    # получить переменные для проверки границ матрицы
-                    rw: int = operator.add(cell.row, row_dx)
-                    col: int = operator.add(cell.column, col_dx)
-
-                    # проверяем границы матрицы, если значения не существует то пропускаем
-                    cl: Cell = self.get_cell(rw=rw, cl=col)
-
-                    if not cl:
-                        continue
-
-                    # # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
-                    # if cl.is_mine:
-                    #     continue
-
-                    # если в свойстве ответа количество мин не равен нолю (пустоте),
-                    # и у ячейки статус не открыта, то добавляем ее в очередь
-                    if not cl.count_mine_near and not cl.is_open:
-                        queue.append(cl)
-                    # иначе у ячейки ставим статус открытой is_open = True
-                    else:
-                        self.set_open_cell(cl)
+                # если в свойстве ответа количество мин не равен нолю (пустоте),
+                # и у ячейки статус не открыта, то добавляем ее в очередь
+                if not cl.count_mine_near and not cl.is_open:
+                    queue.append(cl)
+                # иначе у ячейки ставим статус открытой is_open = True
+                else:
+                    self.set_open_cell(cl)
 
             # добавляем текущей ячейки (от которой ведется обход) статус открыта is_open = True
             self.set_open_cell(cell)
@@ -210,32 +214,18 @@ class Field:
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
 
-        grid: list = Values.graph()
-
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
-            for cs in cells:
+            for cell in cells:
 
                 # найти мину, для добавления значений соседним ячейкам
-                if not cs.is_mine:
+                if not cell.is_mine:
                     continue
 
-                # обходим соседние ячейки, используя значения из списка [-1, 0, 1]
-                for row_dx in grid:
-                    for col_dx in grid:
-
-                        # получить переменные для проверки границ матрицы
-                        rw: int = operator.add(cs.row, row_dx)
-                        col: int = operator.add(cs.column, col_dx)
-
-                        # проверяем границы матрицы, если значения не существует то пропускаем
-                        cl = self.get_cell(rw=rw, cl=col)
-
-                        if not cl:
-                            continue
-
-                        # если проверки проходят, то меняем значение в нашей матрице
-                        cl.set_count_mine()
+                # перебрать все ячейки, относительно текущей ячейки, через объект итератора,
+                for cl in self.iterate_cells(row=cell.row, col=cell.column):
+                    # и поменять значения, если по соседству была обнаружена мина
+                    cl.set_count_mine()
 
     def reset_properties(self):
         """- вернуть свойства в первоначальное состояние"""
@@ -324,82 +314,3 @@ class Game:
             return dict(message="ВЫ ВЫГРАЛИ, УРА!!!", category='success')
 
         return None
-
-
-class ColumnIterator:
-    """- итератор обхода по колонкам"""
-
-    def __init__(self, field, cell, graph, row):
-        self.field: Field = field
-        self.cell: Cell = cell
-        self.graph: List[int] = graph
-        self.row: int = row
-        self.count: int = Values.EMPTY.value
-
-    def __len__(self):
-        return len(self.graph) - Values.RATIO.value
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        if len(self) < self.count:
-            raise StopIteration
-
-        column = self.graph[self.count]
-        self.count += 1
-
-        # получить переменные для проверки границ матрицы
-        rw: int = operator.add(self.cell.row, self.row)
-        col: int = operator.add(self.cell.column, column)
-
-        # проверяем границы матрицы, если значения не существует то пропускаем
-        cell = self.field.get_cell(rw=rw, cl=col)
-
-        if cell:
-            return cell
-
-
-
-class RowIterator:
-    """- итератор обхода по строкам"""
-
-    def __init__(self, field, cell):
-        self.field: Field = field
-        self.cell: Cell = cell
-        self.graph: List[int] = Values.graph()
-        self.count: int = Values.EMPTY.value
-
-    def __len__(self):
-        return len(self.graph) - Values.RATIO.value
-
-    def __iter__(self):
-        return self
-
-    def __next__(self) -> ColumnIterator:
-        if len(self) < self.count:
-            raise StopIteration
-
-        row = self.graph[self.count]
-        self.count += 1
-
-        return ColumnIterator(self.field, self.cell, self.graph, row)
-
-
-# ================================
-
-
-field = Field()
-field.init_field(Complex.EASY.name)
-
-for cell in field.cells:
-    print(cell)
-
-rt = RowIterator(field, field.get_cell(2, 5))
-
-for row in rt:
-    for col in row:
-        print(col.id)
-
-
-

@@ -9,7 +9,7 @@ from flask import (
     flash,
 )
 
-from sapper import Game, Complex
+from resources.sapper import Game, Complex
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret_key'
