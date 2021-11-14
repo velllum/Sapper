@@ -28,5 +28,3 @@ def register_game(app: Flask):
 def register_config(app: Flask, path: str):
     """- регистрируем конфигурационные данные"""
     app.config.from_pyfile(path)
-    # app.config['SECRET_KEY'] = 'secret_key'
-    # app.config['DEBUG'] = True
