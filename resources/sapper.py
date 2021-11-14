@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional
 
 from flask import request
 
-import resources as it
+import resources.iterator as it
 
 
 class Complex(int, Enum):

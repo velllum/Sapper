@@ -1,7 +1,7 @@
 import operator
 from typing import List
 
-import resources as sp
+import resources.sapper as sp
 
 
 class BaseIterator:
@@ -17,7 +17,7 @@ class BaseIterator:
         """- переопределяем метод получения объекта итерации"""
         return self
 
-    def __next__(self):
+    def __next__(self) -> int:
         """- переопределяем метод текущей итерации"""
 
         # проверяем конец последовательности
@@ -26,10 +26,8 @@ class BaseIterator:
 
         # берем значение из списка [-1, 0, 1]
         coord = self.graph[self.count]
-
         # увеличиваем счетчик
         self.count += 1
-
         return coord
 
     def __len__(self):
@@ -37,8 +35,9 @@ class BaseIterator:
         return len(self.graph) - sp.Values.RATIO.value
 
     @staticmethod
-    def get_coord(coord_a: int = 0, coord_b: int = 0) -> int:
-        """- получить кордиту, добавив указатель из списка [-1, 0, 1], относительно находящейся ячейки"""
+    def get_coord(coord_a: int, coord_b: int) -> int:
+        """- получить кордиту, добавив указатель из списка [-1, 0, 1],
+        относительно находящейся ячейки"""
         return operator.add(coord_a, coord_b)
 
 
@@ -49,7 +48,7 @@ class ColumnIterator(BaseIterator):
         super().__init__(cell, field)
         self.coord_row: int = coord_row
 
-    def __next__(self):
+    def __next__(self) -> sp.Cell:
         coord_col = super().__next__()
 
         # получаем ячейку из матрицы, по координатам
@@ -84,9 +83,8 @@ class Iterator:
     """- получаем данные от клиента"""
 
     @classmethod
-    def iterate_object(cls, field, cell) -> List:
+    def iterate_object(cls, field: sp.Field, cell: sp.Cell) -> List[sp.Cell]:
         """- перебрать итерируемый объект и добавить его в список если он не None"""
-
         # собрать объекты всех ячеек что рядом в общий список
         cells = [
             cl
@@ -99,7 +97,3 @@ class Iterator:
         ]
 
         return cells
-
-
-
-
