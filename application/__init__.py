@@ -16,6 +16,7 @@ def create_app(path: str) -> Flask:
         # добавляем представления,
         # перед тем как отправить их на выполнение
         from . import routes
+        from . import urls
 
         return app
 

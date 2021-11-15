@@ -12,7 +12,7 @@ from flask import (
 from resources.sapper import Complex
 
 
-@app.route('/', methods=["GET", "POST"])
+# @app.route('/', methods=["GET", "POST"])
 def index():
     """- главная страница, выбора сложности игры"""
     # если был выполнен POST запрос,
