@@ -1,5 +1,6 @@
 from flask import Flask
 
+from . import urls
 from resources.sapper import Game
 
 
@@ -13,10 +14,8 @@ def create_app(path: str) -> Flask:
     # запускаем контекст объекта,
     # чтоб можно получить его через current_app
     with app.app_context():
-        # добавляем представления,
-        # перед тем как отправить их на выполнение
-        from . import routes
-        from . import urls
+        # регистрируем нашу urls, адреса
+        urls.register_urls(app)
 
         return app
 

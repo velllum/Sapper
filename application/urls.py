@@ -1,6 +1,23 @@
-from flask import current_app as app
+from flask import Flask
 
-# правила перенаправлений на новые URL-адреса
-from .routes import index
+from . import views
 
-app.add_url_rule(rule='/', endpoint="index", view_func=index, methods=['GET', 'POST'])
+
+def register_urls(app: Flask):
+    """- регистрируем наши urls, адреса"""
+
+    # главная страница
+    app.add_url_rule(
+        rule='/',
+        endpoint="index",
+        methods=['GET', 'POST'],
+        view_func=views.ViewIndex.as_view("index"),
+    )
+
+    # страница с игрой
+    app.add_url_rule(
+        rule='/game',
+        endpoint="game",
+        methods=['GET', 'POST'],
+        view_func=views.ViewGame.as_view("game"),
+    )
