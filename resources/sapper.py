@@ -151,7 +151,7 @@ class Field:
     def place_mines(self):
         """- расставить мины"""
         # получить список с id, уникальными идентификаторами объекта
-        lst: List[int] = [cl.id for cel in self.cells for cl in cel]
+        lst: List[int] = list(range(Values.RATIO.value, self.count_id + Values.RATIO.value))
         # перемешать список с id рандомно
         random.shuffle(lst)
         # сделать срез по количеству мин, указанные клиентом
@@ -201,6 +201,8 @@ class Field:
 
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
+
+        print([(row, col) for row in Values.graph() for col in Values.graph()])
 
         # создать индексы строк и столбцов для обхода матрицы
         for cells in self.cells:
