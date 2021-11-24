@@ -21,6 +21,7 @@ class ViewIndex(views.MethodView):
     # чтоб убрать лишнее присутствие данных в ссылке после GET запроса
 
     def __init__(self):
+
         self.gm = app.gm
 
     def get(self):
