@@ -4,7 +4,7 @@ import random
 from enum import Enum
 from typing import List, Tuple, Optional
 
-from flask import request
+from flask import request, Flask
 
 import resources.iterator as it
 
@@ -39,7 +39,7 @@ class Values(int, Enum):
     @staticmethod
     def coord_crawl_cells() -> List[Tuple[int, int]]:
         """- получить список с координатами ячеек обхода,
-        для иенения свойств"""
+        для быстрого обхода свойств ячеек"""
         return [
             (row, col)
             for row in Values.graph()
@@ -230,7 +230,7 @@ class Field:
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
 
-        # перебрать список сформированых координат ячеек и применить их к матрице
+        # перебрать список сформированных координат ячеек и применить их к матрице
         for current_coord in self.coord_cells:
             # найти мину, для добавления значений соседним ячейкам
             cell = self.get_cell(*current_coord)
@@ -270,7 +270,8 @@ class Field:
         self.fill_count_mine_nearby()
         # получить количество не заминированных ячеек
         self.get_non_mined_cells()
-        # обнулить счетчики и значение свойст к первоначальному состоянию, после предедущей игры
+        # обнулить счетчики и значение свойст к первоначальному состоянию,
+        # после предыдущей игры
         self.reset_properties()
 
     def init_field(self, level: str):
@@ -283,14 +284,15 @@ class Field:
 
 
 class Game:
-    """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
+    """- уровень игры, варианты окончание игры,
+    победа, поражение, начало игры, конец игры"""
 
     def __init__(self, app=None):
         self.field: Field = Field()
         if app:
             self.init_game(app)
 
-    def init_game(self, app):
+    def init_game(self, app: Flask):
         """- инициализация игры"""
         if not hasattr(app, 'extensions'):
             app.extensions = {}
