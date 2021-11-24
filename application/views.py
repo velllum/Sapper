@@ -13,22 +13,39 @@ from flask import (
 from resources.sapper import Complex
 
 
-class ViewIndex(views.MethodView):
+class BaseView(views.MethodView):
+    """- Базовый класс"""
+
+    def __init__(self):
+        self.gm = app.extensions.get("game")
+
+    def print_console(self):
+        """- Вывод в консоль (шпаргалка)"""
+        copy_cells = copy.deepcopy(self.gm.field.cells)
+        lst_cells = []
+
+        for x in range(15):
+            cells = []
+            lst_cells.append(cells)
+            for y in range(15):
+                cells.append(copy_cells[y][x])
+
+        for cl in copy.deepcopy(lst_cells):
+            print(cl)
+
+
+class ViewIndex(BaseView):
     """- главная страница, выбора сложности игры"""
 
     # если был выполнен POST запрос,
     # то переводим повторно нашего клиента на главную страницу,
     # чтоб убрать лишнее присутствие данных в ссылке после GET запроса
 
-    def __init__(self):
-
-        self.gm = app.gm
-
     def get(self):
         if request.args:
             # инициализируем игру, при помощи полученных
             # данных от GET запроса реализованны в init_game
-            self.gm.init_game()
+            self.gm.start()
             return redirect(url_for("game"))
 
         return render_template('index.html', context=Complex)
@@ -37,11 +54,8 @@ class ViewIndex(views.MethodView):
         return redirect(url_for("index"))
 
 
-class ViewGame(views.MethodView):
+class ViewGame(BaseView):
     """- Играем"""
-
-    def __init__(self):
-        self.gm = app.gm
 
     def get(self):
         # проверка если матрица пуста, или еще была не создана,
@@ -84,17 +98,3 @@ class ViewGame(views.MethodView):
         и после перезапуска Post запроса в браузере"""
         if not self.gm.field.cells:
             return redirect(url_for("index"))
-
-    def print_console(self):
-        """- Вывод в консоль (шпаргалка)"""
-        copy_cells = copy.deepcopy(self.gm.field.cells)
-        lst_cells = []
-
-        for x in range(15):
-            cells = []
-            lst_cells.append(cells)
-            for y in range(15):
-                cells.append(copy_cells[y][x])
-
-        for cl in copy.deepcopy(lst_cells):
-            print(cl)

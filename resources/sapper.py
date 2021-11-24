@@ -285,10 +285,18 @@ class Field:
 class Game:
     """- уровень игры, варианты окончание игры, победа, поражение, начало игры, конец игры"""
 
-    def __init__(self):
+    def __init__(self, app=None):
         self.field: Field = Field()
+        if app:
+            self.init_game(app)
 
-    def init_game(self):
+    def init_game(self, app):
+        """- инициализация игры"""
+        if not hasattr(app, 'extensions'):
+            app.extensions = {}
+        app.extensions["game"] = self
+
+    def start(self):
         """- инициализация игры"""
         # получить данные из формы от GET запроса,
         # с данными уровня сложности
