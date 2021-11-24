@@ -1,3 +1,4 @@
+import operator
 import random
 
 from enum import Enum
@@ -34,6 +35,16 @@ class Values(int, Enum):
         """- список с значениями для обхода ячеек
         по вертикали, горизонтали и диагонали"""
         return [-1, 0, 1]
+
+    @staticmethod
+    def coord_crawl_cells() -> List[Tuple[int, int]]:
+        """- получить список с координатами ячеек обхода,
+        для иенения свойств"""
+        return [
+            (row, col)
+            for row in Values.graph()
+            for col in Values.graph()
+        ]
 
 
 class Cell:
@@ -88,6 +99,7 @@ class Field:
         self.count_id: int = Values.EMPTY.value  # счетчик созданных id ячеек
         self.count_open_cells: int = Values.EMPTY.value  # счетчик количества открытых ячеек на поле
         self.is_disabled: bool = False  # состояние поля, для показа в шаблоне представления (показать или скрыть)
+        self.coord_cells: List[Tuple[int, int]] = self.shape_coord_cells_matrix()
 
     def get_cell(self, rw: int, cl: int) -> Optional[Cell]:
         """- получить значение ячейки по номеру столбца и строки"""
@@ -126,6 +138,16 @@ class Field:
         """- получить количество не заминированных ячеек"""
         self.non_mined_cells = Values.FULL_CELLS - self.count_mine_field
 
+    @staticmethod
+    def shape_coord_cells_matrix():
+        """- сформировать список координат ячеек матрицы"""
+        coordinates: List[Tuple[int, int]] = [
+            (row, col)
+            for col in list(range(Values.VERTICAL.value))
+            for row in list(range(Values.HORIZON.value))
+        ]
+        return coordinates
+
     def create_matrix(self):
         """- создать матрицу 15X15"""
         lst = [
@@ -150,19 +172,14 @@ class Field:
 
     def place_mines(self):
         """- расставить мины"""
-        # получить список с id, уникальными идентификаторами объекта
-        lst: List[int] = list(range(Values.RATIO.value, self.count_id + Values.RATIO.value))
         # перемешать список с id рандомно
-        random.shuffle(lst)
+        random.shuffle(self.coord_cells)
         # сделать срез по количеству мин, указанные клиентом
-        lt: List[int] = lst[: self.count_mine_field]
-        # перезаписать матрицу, расставить мины,
-        # используя перемешанный рандомно список и обрезанный по указателю сложности,
-        # полученному от пользователя
-        for cel in self.cells:
-            for cl in cel:
-                if cl.id in lt:
-                    cl.set_mine()
+        coord_mines: List[Tuple[int, int]] = self.coord_cells[: self.count_mine_field]
+        # перезаписать матрицу, расставить мины
+        for coord in coord_mines:
+            cell = self.get_cell(*coord)
+            cell.set_mine()
 
     def iterate_cells(self, row: int, col: int) -> List[Cell]:
         """- получить ячейки через итерируемы объект"""
@@ -182,9 +199,20 @@ class Field:
             if cell.is_open:
                 continue
 
-            # перебрать все ячейки, относительно текущей ячейки, через объект итератора,
-            for cl in self.iterate_cells(row=cell.row, col=cell.column):
+            # # перебрать все ячейки, относительно текущей ячейки
+            for coord in Values.coord_crawl_cells():
                 # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
+
+                row, column = coord
+
+                coord_rw: int = operator.add(cell.row, row)
+                coord_cl: int = operator.add(cell.column, column)
+
+                cl = self.get_cell(rw=coord_rw, cl=coord_cl)
+
+                if not cl:
+                    continue
+
                 if cl.is_mine:
                     continue
 
@@ -202,20 +230,27 @@ class Field:
     def fill_count_mine_nearby(self):
         """- заполнить матрицу объектов количеством мин по соседству"""
 
-        print([(row, col) for row in Values.graph() for col in Values.graph()])
+        # перебрать список сформированых координат ячеек и применить их к матрице
+        for current_coord in self.coord_cells:
+            # найти мину, для добавления значений соседним ячейкам
+            cell = self.get_cell(*current_coord)
 
-        # создать индексы строк и столбцов для обхода матрицы
-        for cells in self.cells:
-            for cell in cells:
+            if not cell.is_mine:
+                continue
 
-                # найти мину, для добавления значений соседним ячейкам
-                if not cell.is_mine:
+            for coord in Values.coord_crawl_cells():
+
+                row, column = coord
+
+                coord_rw: int = operator.add(cell.row, row)
+                coord_cl: int = operator.add(cell.column, column)
+
+                cl = self.get_cell(rw=coord_rw, cl=coord_cl)
+
+                if not cl:
                     continue
 
-                # перебрать все ячейки, относительно текущей ячейки, через объект итератора,
-                for cl in self.iterate_cells(row=cell.row, col=cell.column):
-                    # и поменять значения, если по соседству была обнаружена мина
-                    cl.set_count_mine()
+                cl.set_count_mine()
 
     def reset_properties(self):
         """- вернуть свойства в первоначальное состояние"""
