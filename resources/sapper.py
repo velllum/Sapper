@@ -1,4 +1,3 @@
-import operator
 import random
 
 from enum import Enum
@@ -181,10 +180,6 @@ class Field:
             cell = self.get_cell(*coord)
             cell.set_mine()
 
-    def iterate_cells(self, row: int, col: int) -> List[Cell]:
-        """- получить ячейки через итерируемы объект"""
-        return it.Iterator.iterate_object(field=self, cell=self.get_cell(rw=row, cl=col))
-
     def open_empty_cells_nearby(self, obj: Cell):
         """- открыть пустые ячейки поблизости"""
 
@@ -200,19 +195,14 @@ class Field:
                 continue
 
             # # перебрать все ячейки, относительно текущей ячейки
-            for coord in Values.coord_crawl_cells():
-                # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
+            # for coord in Values.coord_crawl_cells():
+            for cl in it.GeneratorCells.object(field=self, cell=cell):
 
-                row, column = coord
-
-                coord_rw: int = operator.add(cell.row, row)
-                coord_cl: int = operator.add(cell.column, column)
-
-                cl = self.get_cell(rw=coord_rw, cl=coord_cl)
-
+                # # проверка на None
                 if not cl:
                     continue
 
+                # если у ячейки, из ответа, (вдруг) статус мины, то делаем пропуск
                 if cl.is_mine:
                     continue
 
@@ -238,14 +228,7 @@ class Field:
             if not cell.is_mine:
                 continue
 
-            for coord in Values.coord_crawl_cells():
-
-                row, column = coord
-
-                coord_rw: int = operator.add(cell.row, row)
-                coord_cl: int = operator.add(cell.column, column)
-
-                cl = self.get_cell(rw=coord_rw, cl=coord_cl)
+            for cl in it.GeneratorCells.object(field=self, cell=cell):
 
                 if not cl:
                     continue

@@ -1,6 +1,6 @@
 from flask import Flask
 
-
+from .urls import register_urls
 from resources.sapper import Game
 
 
@@ -10,11 +10,12 @@ def create_app(path: str) -> Flask:
 
     register_config(app, path)
 
+    # регистрируем нашу urls, адреса
+    register_urls(app)
+
     # запускаем контекст объекта,
     # чтоб можно получить его через current_app
     with app.app_context():
-        # регистрируем нашу urls, адреса
-        register_urls(app)
         # регистрируем игру
         register_resources(app)
 
@@ -25,12 +26,6 @@ def register_resources(app: Flask):
     """- регистрируем игру"""
     gm = Game()
     gm.init_game(app)
-
-
-def register_urls(app):
-    """- регистрируем url адреса"""
-    from . import urls
-    urls.register_urls(app)
 
 
 def register_config(app: Flask, path: str):

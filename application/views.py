@@ -10,14 +10,14 @@ from flask import (
     views,
 )
 
-from resources.sapper import Complex
+from resources.sapper import Complex, Game
 
 
 class BaseView(views.MethodView):
     """- Базовый класс"""
 
     def __init__(self):
-        self.gm = app.extensions.get("game")
+        self.gm: Game = app.extensions.get("game")
 
     def print_console(self):
         """- Вывод в консоль (шпаргалка)"""
