@@ -1,5 +1,5 @@
 import operator
-from typing import Optional, Generator, Iterator
+from typing import Optional, Iterator
 
 import resources.sapper as sp
 
